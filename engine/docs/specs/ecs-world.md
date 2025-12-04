@@ -1,0 +1,2 @@
+# World
+The World is the central orchestrator of Game Studio X's Entity-Component-System architecture. It manages the lifecycle of all entities in your game, coordinates system execution, and drives the core game loop. The World maintains a registry of systems that process entities each frame, ensuring that game logic runs in a predictable and efficient manner. Through the World, you create entities, register systems, and update the entire game state with delta-time-based updates for smooth, frame-independent gameplay.
