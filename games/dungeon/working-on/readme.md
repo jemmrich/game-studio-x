@@ -1,0 +1,2 @@
+# Working-On
+This is a folder to place files that you want to reference later but is not important for the build of the application. Things such as logos, inspiration, external documents, references, etc.
