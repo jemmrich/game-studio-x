@@ -1,0 +1,30 @@
+{
+  "tasks": {
+    "dev": "deno run -A --node-modules-dir=auto npm:vite",
+    "build": "deno run -A --node-modules-dir=auto npm:vite build"
+  },
+  "imports": {
+    "@dimforge/rapier3d-compat": "npm:@dimforge/rapier3d-compat@^0.19.3",
+    "@std/assert": "jsr:@std/assert@1",
+    "@std/testing/bdd": "jsr:@std/testing@0.218/bdd",
+    "@tweakpane/core": "npm:@tweakpane/core@^2.0.5",
+    "@types/three": "npm:@types/three@^0.181.0",
+    "react": "npm:react@^19.1.1",
+    "react-dom": "npm:react-dom@^19.1.1",
+    "eslint": "npm:eslint@^9.35.0",
+    "eslint-plugin-react-hooks": "npm:eslint-plugin-react-hooks@^5.2.0",
+    "eslint-plugin-react-refresh": "npm:eslint-plugin-react-refresh@^0.4.20",
+    "@types/node": "npm:@types/node@^24.10.1",
+    "@types/react": "npm:@types/react@^19.2.5",
+    "@types/react-dom": "npm:@types/react-dom@^19.2.3",
+    "@vitejs/plugin-react": "npm:@vitejs/plugin-react@^5.1.1",
+    "three": "npm:three@^0.181.2",
+    "tweakpane": "npm:tweakpane@^4.0.5",
+    "typescript": "npm:typescript@^5.9.2",
+    "typescript-eslint": "npm:typescript-eslint@^8.43.0",
+    "vite": "npm:vite@^7.1.5",
+    "globals": "npm:globals@^16.4.0",
+    "@engine/": "../../engine/src/"
+  },
+  "nodeModulesDir": "auto"
+}
