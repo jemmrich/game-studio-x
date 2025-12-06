@@ -657,26 +657,26 @@ export class World {
 - [x] Integration points with World confirmed
 
 ### Phase 3 — Implementation
-- [ ] Scene interface implemented
-- [ ] Tag component created (if not already exists in components)
-- [ ] SceneManager resource implemented
-- [ ] SceneLifecycleSystem implemented
-- [ ] BaseScene class implemented
-- [ ] DemoBaseScene class implemented
-- [ ] World integration (removeEntity, queries)
-- [ ] Edge cases handled (rapid scene switching, disposal during load)
-- [ ] Performance considerations (entity cleanup optimization)
+- [x] Scene interface implemented
+- [x] Tag component created (if not already exists in components)
+- [x] SceneManager resource implemented
+- [x] SceneLifecycleSystem implemented
+- [x] BaseScene class implemented
+- [x] DemoBaseScene class implemented
+- [x] World integration (removeEntity, queries)
+- [x] Edge cases handled (rapid scene switching, disposal during load)
+- [x] Performance considerations (entity cleanup optimization)
 
 ### Phase 4 — Testing
-- [ ] Unit tests for SceneManager state transitions
-- [ ] Unit tests for BaseScene lifecycle methods
-- [ ] Unit tests for entity cleanup
-- [ ] Integration test: scene transitions
-- [ ] Integration test: scene stack (push/pop)
-- [ ] Integration test: scene reset preserves UI
-- [ ] Demo scene: shapes demo with reset
-- [ ] Demo scene: second demo to test transitions
-- [ ] Profiling: scene cleanup performance with 1000+ entities
+- [x] Unit tests for SceneManager state transitions (25 tests)
+- [x] Unit tests for BaseScene lifecycle methods (18 tests)
+- [x] Unit tests for entity cleanup (15 tests)
+- [x] Integration test: scene transitions (14 tests)
+- [x] Integration test: scene stack (push/pop) (14 tests)
+- [x] Integration test: scene reset preserves UI (14 tests)
+- [x] Demo scene: shapes demo with reset (ShapesScene)
+- [x] Demo scene: second demo to test transitions (GridScene)
+- [x] Profiling: scene cleanup performance with 1000+ entities (10 tests)
 
 ### Phase 5 — Documentation & Release
 - [ ] User-facing documentation (how to create scenes)

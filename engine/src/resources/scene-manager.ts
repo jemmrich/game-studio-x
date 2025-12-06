@@ -51,17 +51,18 @@ export class SceneManager {
 
   /**
    * Pop the current scene and resume the previous scene from the stack.
+   * Internal method called by the lifecycle system or tests with world reference.
    */
-  popScene(): void {
+  popScene(world?: any): void {
     if (this.currentScene) {
-      this.currentScene.dispose(null as any); // World will be injected by lifecycle system
+      this.currentScene.dispose(world || (null as any));
       this.onSceneUnloadCallbacks.forEach((cb) => cb(this.currentScene!));
     }
 
     if (this.sceneStack.length > 0) {
       this.currentScene = this.sceneStack.pop()!;
       this.state = SceneState.Active;
-      this.currentScene.resume(null as any); // World will be injected by lifecycle system
+      this.currentScene.resume(world || (null as any)); // World will be injected by lifecycle system
     } else {
       this.currentScene = null;
       this.state = SceneState.Unloaded;
@@ -71,9 +72,9 @@ export class SceneManager {
   /**
    * Reset the current scene to its initial state without full reload.
    */
-  resetCurrentScene(): void {
+  resetCurrentScene(world?: any): void {
     if (this.currentScene && this.state === SceneState.Active) {
-      this.currentScene.reset(null as any); // World will be injected by lifecycle system
+      this.currentScene.reset(world || (null as any)); // World will be injected by lifecycle system
     }
   }
 
