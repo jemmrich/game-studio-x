@@ -11,7 +11,7 @@ import {
   installRenderPlugin,
 } from "@engine/features/render-plugin/mod.ts";
 import { DemoUIRenderSystem, DemoInputSystem } from "@engine/systems/mod.ts";
-import { PrimitivesScene } from "@engine/demos/primatives.ts";
+import { PrimitivesScene, DebugScene } from "@engine/demos/mod.ts";
 import { DungeonScene } from "./game/scenes/dungeon.ts";
 
 createRoot(document.getElementById("ui")!).render(
@@ -39,7 +39,7 @@ function main() {
   installRenderPlugin(world, {
     canvas: document.querySelector("canvas") as HTMLCanvasElement,
     antialias: true,
-    clearColor: [0.53, 0.81, 0.92, 1.0], // Sky blue background
+    clearColor: [0, 0, 0, 1.0], // Black background
   });
 
   // Register demo UI render system (must run after render plugin is installed)
@@ -49,8 +49,11 @@ function main() {
   world.addSystem(new DemoInputSystem());
 
   // Load the primitives demo scene
-  const primitivesScene = new PrimitivesScene();
-  sceneManager.loadScene(primitivesScene);
+  // const primitivesScene = new PrimitivesScene();
+  // sceneManager.loadScene(primitivesScene);
+
+  const demoScene = new DebugScene();
+  sceneManager.loadScene(demoScene);
 
   // Handle window resize
   globalThis.addEventListener("resize", () => {

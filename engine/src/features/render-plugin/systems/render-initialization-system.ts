@@ -3,7 +3,7 @@ import type { WebGL2RenderingContext } from "../types.ts";
 import { RenderContext } from "../resources/render-context.ts";
 import { ShaderLibrary } from "../resources/shader-library.ts";
 import { createShaderProgram } from "../utils/shader.ts";
-import { BASIC_FRAGMENT_SHADER, BASIC_VERTEX_SHADER, RAINBOW_FRAGMENT_SHADER, RAINBOW_VERTEX_SHADER } from "./shaders.ts";
+import { BASIC_FRAGMENT_SHADER, BASIC_VERTEX_SHADER, RAINBOW_FRAGMENT_SHADER, RAINBOW_VERTEX_SHADER, PHONG_FRAGMENT_SHADER, PHONG_VERTEX_SHADER } from "./shaders.ts";
 
 export interface RenderInitConfig {
   antialias?: boolean;
@@ -71,9 +71,22 @@ export class RenderInitializationSystem {
       console.error("Failed to create rainbow shader program");
       return;
     }
+
+    // Compile phong shader program
+    const phongProgram = createShaderProgram(
+        gl,
+        PHONG_VERTEX_SHADER,
+        PHONG_FRAGMENT_SHADER,
+    );
+
+    if (!phongProgram) {
+      console.error("Failed to create phong shader program");
+      return;
+    }
     
     shaderLibrary.add("basic", basicProgram);
     shaderLibrary.add("rainbow", rainbowProgram);
+    shaderLibrary.add("phong", phongProgram);
 
     // Set up WebGL state
     gl?.clearColor(

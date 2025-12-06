@@ -4,6 +4,7 @@ import { RenderContext } from "../resources/render-context.ts";
 import { GeometryBufferCache } from "../resources/geometry-buffer-cache.ts";
 import { ShaderLibrary } from "../resources/shader-library.ts";
 import { LightingState } from "../resources/lighting-state.ts";
+import { CameraState } from "../resources/camera-state.ts";
 import { Material, BasicMaterial, PhongMaterial } from "../components/material.ts";
 import { Visible } from "../components/visible.ts";
 import { BoxGeometry } from "../components/box-geometry.ts";
@@ -68,6 +69,7 @@ export class MeshRenderSystem {
         // Phong material uniforms
         uSpecularColor: gl.getUniformLocation(program, "uSpecularColor"),
         uShininess: gl.getUniformLocation(program, "uShininess"),
+        uCameraPosition: gl.getUniformLocation(program, "uCameraPosition"),
       },
     };
 
@@ -80,6 +82,7 @@ export class MeshRenderSystem {
     const bufferCache = world.getResource<GeometryBufferCache>("GeometryBufferCache");
     const shaderLibrary = world.getResource<ShaderLibrary>("ShaderLibrary");
     const lightingState = world.getResource<LightingState>("LightingState");
+    const cameraState = world.getResource<CameraState>("CameraState");
 
     if (!renderContext.gl) return;
 
@@ -95,6 +98,7 @@ export class MeshRenderSystem {
       bufferCache,
       shaderLibrary,
       lightingState,
+      cameraState,
       renderContext
     );
   }
@@ -105,6 +109,7 @@ export class MeshRenderSystem {
     bufferCache: GeometryBufferCache,
     shaderLibrary: any,
     lightingState: any,
+    cameraState: any,
     renderContext: any
   ): void {
     // Query and render all entities with geometry and visibility
@@ -114,6 +119,7 @@ export class MeshRenderSystem {
       bufferCache,
       shaderLibrary,
       lightingState,
+      cameraState,
       renderContext,
       BoxGeometry,
       (geo: BoxGeometry) => `box_${geo.width}_${geo.height}_${geo.depth}`
@@ -125,6 +131,7 @@ export class MeshRenderSystem {
       bufferCache,
       shaderLibrary,
       lightingState,
+      cameraState,
       renderContext,
       SphereGeometry,
       (geo: SphereGeometry) => `sphere_${geo.radius}_${geo.segments}_${geo.rings}`
@@ -136,6 +143,7 @@ export class MeshRenderSystem {
       bufferCache,
       shaderLibrary,
       lightingState,
+      cameraState,
       renderContext,
       CylinderGeometry,
       (geo: CylinderGeometry) =>
@@ -148,6 +156,7 @@ export class MeshRenderSystem {
       bufferCache,
       shaderLibrary,
       lightingState,
+      cameraState,
       renderContext,
       PlaneGeometry,
       (geo: PlaneGeometry) =>
@@ -160,6 +169,7 @@ export class MeshRenderSystem {
       bufferCache,
       shaderLibrary,
       lightingState,
+      cameraState,
       renderContext,
       ConeGeometry,
       (geo: ConeGeometry) => `cone_${geo.radius}_${geo.height}_${geo.segments}`
@@ -172,6 +182,7 @@ export class MeshRenderSystem {
     bufferCache: GeometryBufferCache,
     shaderLibrary: any,
     lightingState: any,
+    cameraState: any,
     renderContext: any,
     geometryClass: any,
     getCacheKey: (geo: any) => string
@@ -242,6 +253,16 @@ export class MeshRenderSystem {
         locations.uniforms.uDirectionalLightIntensity,
         lightingState.directionalLightIntensity
       );
+
+      // Set camera position uniform (needed for specular calculations)
+      if (locations.uniforms.uCameraPosition) {
+        gl.uniform3f(
+          locations.uniforms.uCameraPosition,
+          cameraState.position[0],
+          cameraState.position[1],
+          cameraState.position[2]
+        );
+      }
 
       // Get cached buffers
       const cacheKey = getCacheKey(geometry);

@@ -179,5 +179,105 @@ void main() {
 }
 `;
 
+export const PHONG_VERTEX_SHADER = `#version 300 es
+precision highp float;
+
+// Vertex attributes (from geometry buffers)
+in vec3 aPosition;
+in vec3 aNormal;
+in vec2 aUV;
+
+// Per-frame uniforms (camera transforms)
+uniform mat4 uView;
+uniform mat4 uProjection;
+
+// Per-object uniforms
+uniform mat4 uModel;
+uniform mat3 uNormalMatrix;
+
+// Output to fragment shader (interpolated)
+out vec3 vPosition;      // World-space position
+out vec3 vNormal;        // World-space normal
+out vec2 vUV;           // Texture coordinates
+
+void main() {
+  // Transform vertex position to world space
+  vec4 worldPos = uModel * vec4(aPosition, 1.0);
+  vPosition = worldPos.xyz;
+  
+  // Transform normal to world space (accounting for non-uniform scaling)
+  vNormal = normalize(uNormalMatrix * aNormal);
+  
+  // Pass through UV coordinates
+  vUV = aUV;
+  
+  // Transform to clip space for rasterization
+  gl_Position = uProjection * uView * worldPos;
+}
+`;
+
+export const PHONG_FRAGMENT_SHADER = `#version 300 es
+precision highp float;
+
+// Interpolated from vertex shader
+in vec3 vPosition;
+in vec3 vNormal;
+in vec2 vUV;
+
+// Lighting uniforms (global scene lighting)
+uniform vec3 uAmbientColor;
+uniform float uAmbientIntensity;
+uniform vec3 uDirectionalLightDir;    // Direction TO the light
+uniform vec3 uDirectionalLightColor;
+uniform float uDirectionalLightIntensity;
+
+// Material uniforms
+uniform vec4 uBaseColor;              // RGBA
+uniform float uMetallic;
+uniform float uRoughness;
+uniform float uOpacity;
+uniform int uWireframe;              // 0 = off, 1 = on
+// Phong material uniforms
+uniform vec3 uSpecularColor;         // RGB specular color
+uniform float uShininess;            // Specular shininess exponent
+
+// Camera uniform (needed for specular calculation)
+uniform vec3 uCameraPosition;         // World-space camera position
+
+out vec4 outColor;
+
+void main() {
+  // Normalize interpolated normal
+  vec3 normal = normalize(vNormal);
+  
+  // Ambient lighting component
+  vec3 ambient = uAmbientColor * uAmbientIntensity;
+  
+  // Directional lighting component (Lambertian diffuse)
+  float diffuseStrength = max(dot(normal, -uDirectionalLightDir), 0.0);
+  vec3 diffuse = uDirectionalLightColor * diffuseStrength * uDirectionalLightIntensity;
+  
+  // Specular lighting component (Phong reflection model)
+  vec3 viewDir = normalize(uCameraPosition - vPosition);  // Direction from fragment to camera
+  vec3 reflectDir = reflect(uDirectionalLightDir, normal);  // Reflect light direction around normal
+  float specularStrength = pow(max(dot(viewDir, reflectDir), 0.0), uShininess);
+  vec3 specular = uDirectionalLightColor * specularStrength * uDirectionalLightIntensity * uSpecularColor;
+  
+  // Combine ambient, diffuse, and specular lighting
+  vec3 lighting = ambient + diffuse + specular;
+  
+  // Apply material color and lighting
+  vec3 finalColor = uBaseColor.rgb * lighting;
+  
+  // Handle wireframe mode
+  if (uWireframe == 1) {
+    finalColor = vec3(1.0);  // White wireframe
+  }
+  
+  // Output final color with opacity
+  outColor = vec4(finalColor, uBaseColor.a * uOpacity);
+}
+`;
+
 // Export shader loader for future file-based shaders
 export { loadShaderFile };

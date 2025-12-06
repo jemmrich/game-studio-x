@@ -354,3 +354,51 @@ export function orthographicMatrix(
 
   return result;
 }
+
+/**
+ * Project a 3D world point to screen coordinates
+ * Returns [screenX, screenY] or null if behind camera
+ */
+export function projectToScreen(
+  worldPoint: [number, number, number],
+  viewMatrix: Float32Array,
+  projectionMatrix: Float32Array,
+  screenWidth: number,
+  screenHeight: number
+): [number, number] | null {
+  // Convert to homogeneous coordinates
+  const point = [worldPoint[0], worldPoint[1], worldPoint[2], 1];
+
+  // Transform by view matrix
+  const viewPoint = new Float32Array(4);
+  for (let i = 0; i < 4; i++) {
+    viewPoint[i] = 0;
+    for (let j = 0; j < 4; j++) {
+      viewPoint[i] += viewMatrix[i * 4 + j] * point[j];
+    }
+  }
+
+  // Transform by projection matrix
+  const clipPoint = new Float32Array(4);
+  for (let i = 0; i < 4; i++) {
+    clipPoint[i] = 0;
+    for (let j = 0; j < 4; j++) {
+      clipPoint[i] += projectionMatrix[i * 4 + j] * viewPoint[j];
+    }
+  }
+
+  // Check if point is behind camera (w < 0 in clip space)
+  if (clipPoint[3] <= 0) {
+    return null; // Behind camera, don't render
+  }
+
+  // Perspective divide
+  const ndcX = clipPoint[0] / clipPoint[3];
+  const ndcY = clipPoint[1] / clipPoint[3];
+
+  // Convert NDC (-1 to 1) to screen coordinates (0 to width/height)
+  const screenX = (ndcX + 1) * 0.5 * screenWidth;
+  const screenY = (1 - ndcY) * 0.5 * screenHeight; // Flip Y axis
+
+  return [screenX, screenY];
+}

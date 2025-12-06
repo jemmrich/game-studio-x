@@ -113,15 +113,15 @@ The debug plugin provides a collection of optional helper components and systems
 - [x] Integration points with core engine identified
 
 ### Phase 3 — Implementation
-- [ ] Create the Debug feature plugin folder layout
-- [ ] Debug components created (DebugBounds, DebugGridOverlay, DebugLabel, DebugPerformance)
-- [ ] Debug systems implemented (BoundsRender, GridRender, LabelRender, Performance)
-- [ ] DebugContext resource created
-- [ ] Plugin registration and initialization logic
+- [x] Create the Debug feature plugin folder layout
+- [x] Debug components created (DebugBounds, DebugGridOverlay, DebugLabel, DebugPerformance)
+- [x] Debug systems implemented (BoundsRender, GridRender, LabelRender, Performance)
+- [x] DebugContext resource created
+- [x] Plugin registration and initialization logic
 - [ ] Input handling for debug toggling (if needed for v1)
 
 ### Phase 4 — Testing
-- [ ] Unit tests for debug components
+- [x] Unit tests for debug components
 - [ ] Integration tests for debug systems with rendering
 - [ ] Performance tests (ensure debug features don't tank FPS when enabled)
 - [ ] Compatibility tests with existing game scenes
