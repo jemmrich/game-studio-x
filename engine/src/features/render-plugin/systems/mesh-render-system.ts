@@ -12,7 +12,7 @@ import { CylinderGeometry } from "../components/cylinder-geometry.ts";
 import { PlaneGeometry } from "../components/plane-geometry.ts";
 import { ConeGeometry } from "../components/cone-geometry.ts";
 import { Transform } from "../../transform-plugin/components/transform.ts";
-import * as math from "../utils/math.ts";
+import * as math from "../../../utils/math.ts";
 
 /**
  * Main render system that draws all visible entities with geometry

@@ -1,7 +1,7 @@
 import type { World } from "../../../core/world.ts";
 import { RenderContext } from "../resources/render-context.ts";
 import { CameraState } from "../resources/camera-state.ts";
-import * as math from "../utils/math.ts";
+import * as math from "../../../utils/math.ts";
 
 /**
  * System that updates view and projection matrices based on camera state
