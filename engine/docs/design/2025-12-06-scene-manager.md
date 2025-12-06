@@ -45,6 +45,7 @@ The design follows ECS principles: scenes describe *what* entities and systems t
 #### Scene Lifecycle
 - **create()** - Initial setup, called once when scene is first instantiated
 - **init()** - Called when scene becomes active, spawns entities and registers scene-specific systems
+- **update(world, dt)** (optional) - Called every frame while scene is active, for per-frame scene logic (animations, input, etc.)
 - **reset()** - Clears all scene entities and re-runs init() without full unload/reload cycle
 - **dispose()** - Final cleanup when scene is permanently removed, releases resources
 
@@ -111,6 +112,9 @@ export interface Scene {
   /** Reset scene to initial state without full reload */
   reset(world: World): void;
   
+  /** Called every frame while scene is active (optional) */
+  update?(world: World, dt: number): void;
+  
   /** Called when scene is being removed, cleanup resources */
   dispose(world: World): void;
 }
@@ -173,26 +177,45 @@ Processes scene transitions and state changes:
 ```typescript
 // engine/src/systems/scene-lifecycle-system.ts
 export class SceneLifecycleSystem {
-  execute(world: World): void {
-    const sceneManager = world.getResource(SceneManager);
-    
+  update(world: World, dt: number): void {
+    const sceneManager = world.getResource<SceneManager>("sceneManager");
+    if (!sceneManager) return;
+
+    const state = sceneManager.getState();
+
     // Process scene state machine
-    switch (sceneManager.getState()) {
-      case SceneState.Loading:
+    switch (state) {
+      case SceneState.Loading: {
         this.handleLoading(world, sceneManager);
         break;
-      case SceneState.Unloading:
+      }
+      case SceneState.Unloading: {
         this.handleUnloading(world, sceneManager);
         break;
-      // ... other states
+      }
+      case SceneState.Active: {
+        // Call update on the active scene
+        const currentScene = sceneManager.getCurrentScene();
+        if (currentScene?.update) {
+          currentScene.update(world, dt);
+        }
+        break;
+      }
+      case SceneState.Paused: {
+        // Scene is paused, don't call update
+        break;
+      }
+      case SceneState.Unloaded: {
+        // No scene active
+        break;
+      }
     }
   }
-  
+
   private handleLoading(world: World, sceneManager: SceneManager): void {
-    // Update transition progress
-    // When complete, initialize scene and set to Active
+    // Initialize scene and set to Active
   }
-  
+
   private handleUnloading(world: World, sceneManager: SceneManager): void {
     // Clean up all scene entities
     // Call scene.dispose()
@@ -293,6 +316,10 @@ export abstract class BaseScene implements Scene {
   
   resume(world: World): void {
     // Default resume behavior - can be overridden
+  }
+  
+  update(world: World, dt: number): void {
+    // Optional override for per-frame scene logic
   }
   
   reset(world: World): void {
@@ -619,6 +646,7 @@ export class World {
 - [x] Dependencies identified (core World integration)
 - [x] Review with existing ECS architecture
 - [x] Confirm approach with demo scene workflow
+
 ### Phase 2 — Design
 - [x] Scene interface defined
 - [x] SceneManager resource API designed
