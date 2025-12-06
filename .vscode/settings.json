@@ -1,6 +1,6 @@
 {
   "deno.lint": true,
-  "editor.formatOnSave": true,
+  "editor.formatOnSave": false,
   "editor.defaultFormatter": "denoland.vscode-deno",
   "[markdown]": {
     "editor.formatOnSave": false

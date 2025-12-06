@@ -425,6 +425,215 @@ world.add(box, new Visible());
 //    - Draws indexed geometry
 ```
 
+### Shader Specification
+
+The rendering pipeline uses a single "basic" shader program that handles all geometry types with different materials and lighting.
+
+#### Vertex Shader
+
+```glsl
+// engine/src/features/render-plugin/shaders/basic.vert
+#version 300 es
+precision highp float;
+
+// Vertex attributes (from geometry buffers)
+in vec3 aPosition;
+in vec3 aNormal;
+in vec2 aUV;
+
+// Per-frame uniforms (camera transforms)
+uniform mat4 uView;
+uniform mat4 uProjection;
+
+// Per-object uniforms
+uniform mat4 uModel;
+uniform mat3 uNormalMatrix;
+
+// Output to fragment shader (interpolated)
+out vec3 vPosition;      // World-space position
+out vec3 vNormal;        // World-space normal
+out vec2 vUV;           // Texture coordinates
+
+void main() {
+  // Transform vertex position to world space
+  vec4 worldPos = uModel * vec4(aPosition, 1.0);
+  vPosition = worldPos.xyz;
+  
+  // Transform normal to world space (accounting for non-uniform scaling)
+  vNormal = normalize(uNormalMatrix * aNormal);
+  
+  // Pass through UV coordinates
+  vUV = aUV;
+  
+  // Transform to clip space for rasterization
+  gl_Position = uProjection * uView * worldPos;
+}
+```
+
+#### Fragment Shader
+
+```glsl
+// engine/src/features/render-plugin/shaders/basic.frag
+#version 300 es
+precision highp float;
+
+// Interpolated from vertex shader
+in vec3 vPosition;
+in vec3 vNormal;
+in vec2 vUV;
+
+// Lighting uniforms (global scene lighting)
+uniform vec3 uAmbientColor;
+uniform float uAmbientIntensity;
+uniform vec3 uDirectionalLightDir;    // Direction TO the light
+uniform vec3 uDirectionalLightColor;
+uniform float uDirectionalLightIntensity;
+
+// Material uniforms
+uniform vec4 uBaseColor;              // RGBA
+uniform float uMetallic;
+uniform float uRoughness;
+uniform float uOpacity;
+uniform int uWireframe;              // 0 = off, 1 = on
+
+out vec4 outColor;
+
+void main() {
+  // Normalize interpolated normal
+  vec3 normal = normalize(vNormal);
+  
+  // Ambient lighting component
+  vec3 ambient = uAmbientColor * uAmbientIntensity;
+  
+  // Directional lighting component (simple Lambertian diffuse)
+  // Light direction is normalized and points towards the light source
+  float diffuseStrength = max(dot(normal, -uDirectionalLightDir), 0.0);
+  vec3 diffuse = uDirectionalLightColor * diffuseStrength * uDirectionalLightIntensity;
+  
+  // Combine ambient and directional lighting
+  vec3 lighting = ambient + diffuse;
+  
+  // Apply material color and lighting
+  vec3 finalColor = uBaseColor.rgb * lighting;
+  
+  // Handle wireframe mode
+  if (uWireframe == 1) {
+    finalColor = vec3(1.0);  // White wireframe
+  }
+  
+  // Output final color with opacity
+  outColor = vec4(finalColor, uBaseColor.a * uOpacity);
+}
+```
+
+**Shader Features:**
+- Per-fragment Lambertian diffuse lighting
+- Ambient + directional light model (no specular highlights initially)
+- Support for per-object material properties
+- Wireframe mode support
+- Proper normal transformation accounting for non-uniform scaling
+
+**Future Enhancements:**
+- Add Phong/Blinn-Phong specular highlights
+- Support metallic and roughness properties for PBR
+- Add texture sampling (requires texture resources)
+- Implement normal mapping
+
+### Vertex Attribute Layout
+
+Geometry buffers are organized with the following vertex attribute layout:
+
+```typescript
+// Vertex format definition
+interface Vertex {
+  position: [number, number, number];    // 3 floats, 12 bytes
+  normal: [number, number, number];      // 3 floats, 12 bytes
+  uv: [number, number];                 // 2 floats, 8 bytes
+}
+
+// Total: 32 bytes per vertex
+// Stride: 32 bytes
+```
+
+**Buffer Organization (GPU-side):**
+```
+Position buffer layout (interleaved):
+[x, y, z, x, y, z, x, y, z, ...]
+
+Normal buffer layout (interleaved):
+[nx, ny, nz, nx, ny, nz, ...]
+
+UV buffer layout (interleaved):
+[u, v, u, v, ...]
+
+Index buffer:
+[0, 1, 2, 0, 2, 3, ...]  // Triangle indices
+```
+
+**Vertex Array Object (VAO) Setup:**
+The geometry buffer system creates VAOs with these attribute bindings:
+
+| Attribute | Location | Type | Size | Offset | Stride | Buffer |
+|-----------|----------|------|------|--------|--------|--------|
+| aPosition | 0 | vec3 | 3 | 0 | 32 | Vertex |
+| aNormal | 1 | vec3 | 3 | 12 | 32 | Vertex |
+| aUV | 2 | vec2 | 2 | 24 | 32 | Vertex |
+
+### Uniform Specification
+
+Uniforms are organized into groups that are set at different frequencies:
+
+#### Per-Frame Uniforms (set once per frame)
+```typescript
+// Updated by CameraUpdateSystem
+uView: mat4                // Camera view matrix
+uProjection: mat4          // Camera projection matrix
+
+// Updated by lighting system
+uAmbientColor: vec3        // RGB ambient light color
+uAmbientIntensity: float   // Ambient light intensity (0.0-1.0)
+uDirectionalLightDir: vec3 // Direction TO light source (normalized)
+uDirectionalLightColor: vec3 // RGB color of directional light
+uDirectionalLightIntensity: float // Intensity multiplier (1.0 = full)
+```
+
+#### Per-Object Uniforms (set per entity before draw call)
+```typescript
+// Updated by MeshRenderSystem for each entity
+uModel: mat4               // Entity transform (position, rotation, scale)
+uNormalMatrix: mat3        // Inverse transpose of 3x3 model matrix
+                           // Used for proper normal transformation
+
+// From Material component
+uBaseColor: vec4           // RGBA color (premultiplied by opacity)
+uMetallic: float           // Metallic value (0.0 = non-metal, 1.0 = metal)
+uRoughness: float          // Roughness value (0.0 = smooth, 1.0 = rough)
+uOpacity: float            // Opacity multiplier (0.0-1.0)
+uWireframe: int            // Wireframe mode flag
+```
+
+**Uniform Update Pattern:**
+```typescript
+// Pseudocode for uniform setting in MeshRenderSystem
+for each entity with [Geometry, Material, Transform, Visible] {
+  const material = world.get(entity, Material);
+  const transform = world.get(entity, Transform);
+  
+  // Set per-object uniforms
+  gl.uniformMatrix4fv(uModelLoc, false, calculateModelMatrix(transform));
+  gl.uniformMatrix3fv(uNormalMatrixLoc, false, calculateNormalMatrix(transform));
+  gl.uniform4f(uBaseColorLoc, material.color[0], material.color[1], 
+               material.color[2], material.color[3]);
+  gl.uniform1f(uMetallicLoc, material.metallic);
+  gl.uniform1f(uRoughnessLoc, material.roughness);
+  gl.uniform1f(uOpacityLoc, material.opacity);
+  gl.uniform1i(uWireframeLoc, material.wireframe ? 1 : 0);
+  
+  // Draw entity
+  drawEntity(entity);
+}
+```
+
 ### Component Composition Patterns
 
 ```typescript
@@ -457,8 +666,9 @@ entity + Transform + BoxGeometry + Material
 - [x] Data structures defined
 - [x] Naming conventions approved (follows ECS specs)
 - [x] Architecture reviewed (RenderPlugin pattern)
-- [ ] Shader code design (vertex/fragment shaders)
-- [ ] Buffer layout specification (vertex attributes)
+- [x] Shader code design (vertex/fragment shaders)
+- [x] Buffer layout specification (vertex attributes)
+- [x] Uniform specification (per-frame and per-object uniforms)
 
 ### Plugin Dependencies
 
@@ -501,28 +711,28 @@ installRenderPlugin(world, config); // 6. Rendering (last)
 ```
 
 ### Phase 3 — Implementation
-- [ ] Create plugin folder structure
-- [ ] Create component classes (BoxGeometry, SphereGeometry, etc.)
-- [ ] Create Material component
-- [ ] Create Transform component (if not exists)
-- [ ] Create Visible component
-- [ ] Implement RenderContext resource
-- [ ] Implement GeometryBufferCache resource
-- [ ] Implement ShaderLibrary resource
-- [ ] Implement LightingState resource
-- [ ] Write basic vertex/fragment shaders (GLSL)
-- [ ] Implement RenderInitializationSystem
-- [ ] Implement GeometryBufferSystem
+- [x] Create plugin folder structure
+- [x] Create component classes (BoxGeometry, SphereGeometry, etc.)
+- [x] Create Material component
+- [x] Create Transform component (if not exists)
+- [x] Create Visible component
+- [x] Implement RenderContext resource
+- [x] Implement GeometryBufferCache resource
+- [x] Implement ShaderLibrary resource
+- [x] Implement LightingState resource
+- [x] Write basic vertex/fragment shaders (GLSL)
+- [x] Implement RenderInitializationSystem
+- [x] Implement GeometryBufferSystem
   - Mesh generation algorithms for each primitive
-- [ ] Implement CameraUpdateSystem
-- [ ] Implement MeshRenderSystem
-- [ ] Implement installer function with dependency checks
-- [ ] Create mod.ts with proper exports
-- [ ] Bundle into RenderPlugin
-- [ ] Implement cleanup/disposal for WebGL resources
-- [ ] Edge cases handled (missing components, WebGL context loss)
-- [ ] Performance considerations (batching, frustum culling - future)
-- [ ] Write plugin README.md following documentation template
+- [x] Implement CameraUpdateSystem
+- [x] Implement MeshRenderSystem
+- [x] Implement installer function with dependency checks
+- [x] Create mod.ts with proper exports
+- [x] Bundle into RenderPlugin
+- [x] Implement cleanup/disposal for WebGL resources
+- [x] Edge cases handled (missing components, WebGL context loss)
+- [x] Performance considerations (batching, frustum culling - future)
+- [x] Write plugin README.md following documentation template
 
 ### Phase 4 — Testing
 - [ ] Unit tests for geometry generation algorithms

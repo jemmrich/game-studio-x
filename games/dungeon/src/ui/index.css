@@ -26,6 +26,7 @@ canvas {
   flex-direction: column;
   pointer-events: auto;
   z-index: 10000;
+  display: none;
 }
 
 #debug-hierarchy {

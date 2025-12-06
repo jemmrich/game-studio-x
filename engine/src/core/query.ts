@@ -1,5 +1,16 @@
+import type { GUID } from "../utils/guid.ts";
+import type { World } from "./world.ts";
+
 export class Query {
-  constructor(private world, private components: Function[]) {}
+  constructor(private world: World, private components: Function[]) {}
+
+  entities(): GUID[] {
+    const result: GUID[] = [];
+    for (const [entity] of this) {
+      result.push(entity);
+    }
+    return result;
+  }
 
   *[Symbol.iterator]() {
     const compMgr = this.world._components();
