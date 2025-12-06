@@ -17,6 +17,11 @@ Game Studio X is a modern, lightweight game engine built with Deno, TypeScript, 
 - **Resource Management**: Global world resources (like Time) accessible to all systems
 - **System Management**: Register and execute game logic systems that operate on components
 
+### Scene Management
+- **Scene Manager**: Manage multiple scenes with support for scene transitions and lifecycle management
+- **Base Scene**: Abstract base class for creating game scenes with built-in entity and system lifecycle
+- **Scene Lifecycle Systems**: Automatic cleanup and transition handling for scene changes
+
 ### Rendering Plugin
 - **3D Geometry Primitives**: Box, Sphere, Cylinder, Plane, and Cone geometries
 - **Material System**: Multiple material types (BasicMaterial for diffuse, PhongMaterial for specular highlights)
@@ -30,7 +35,10 @@ Game Studio X is a modern, lightweight game engine built with Deno, TypeScript, 
 - **Position, Rotation, Scale**: Complete 3D transformation component for entities
 - **Transform Hierarchy**: Support for entity-based spatial transformations
 
-### Resource Management
+### Component Library
+- **Name Component**: Assign human-readable names to entities for easier identification and debugging
+- **Tag Component**: Apply tags to entities for categorization and filtering
+- **UI Text Component**: Render text UI elements with positioning and styling support
 - **Time Resource**: Delta time and frame timing information for smooth animations and physics
 
 ### Developer Experience
