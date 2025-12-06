@@ -126,13 +126,18 @@ export function installRenderPlugin(world: World, config: RenderPluginConfig = {
  * @param world - The ECS world to dispose resources from
  */
 export function disposeRenderPlugin(world: World): void {
-  const renderContext = world.getResource<RenderContext>("RenderContext");
-  const geometryBufferCache = world.getResource<GeometryBufferCache>("GeometryBufferCache");
-  const shaderLibrary = world.getResource<ShaderLibrary>("ShaderLibrary");
+  try {
+    const renderContext = world.getResource<RenderContext>("RenderContext");
+    const geometryBufferCache = world.getResource<GeometryBufferCache>("GeometryBufferCache");
+    const shaderLibrary = world.getResource<ShaderLibrary>("ShaderLibrary");
 
-  if (renderContext && renderContext.gl) {
-    geometryBufferCache.dispose(renderContext.gl);
-    shaderLibrary.dispose(renderContext.gl);
-    renderContext.dispose();
+    if (renderContext && renderContext.gl) {
+      geometryBufferCache.dispose(renderContext.gl);
+      shaderLibrary.dispose(renderContext.gl);
+      renderContext.dispose();
+    }
+  } catch {
+    // Resources may not be installed, gracefully handle this
+    // This allows disposeRenderPlugin to be called even if the plugin wasn't properly installed
   }
 }

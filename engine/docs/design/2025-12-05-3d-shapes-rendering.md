@@ -735,13 +735,13 @@ installRenderPlugin(world, config); // 6. Rendering (last)
 - [x] Write plugin README.md following documentation template
 
 ### Phase 4 — Testing
-- [ ] Unit tests for geometry generation algorithms
-- [ ] Unit tests for matrix calculations
-- [ ] Integration tests (create entity, verify rendering)
-- [ ] Visual tests (verify shapes look correct)
-- [ ] Performance profiling (draw calls, buffer uploads)
-- [ ] Test with multiple entities (100+)
-- [ ] Test material property changes at runtime
+- [x] Unit tests for geometry generation algorithms
+- [x] Unit tests for matrix calculations
+- [x] Integration tests (create entity, verify rendering)
+- [x] Visual tests (verify shapes look correct)
+- [x] Performance profiling (draw calls, buffer uploads)
+- [x] Test with multiple entities (100+)
+- [x] Test material property changes at runtime
 
 ### Phase 5 — Documentation & Release
 - [ ] User-facing documentation (how to create 3D shapes)
