@@ -108,6 +108,7 @@ const plane = new PlaneGeometry(width, height, widthSegments, heightSegments);
 ```typescript
 const cone = new ConeGeometry(radius, height, segments);
 // Default: (1, 2, 32)
+// Creates a cone with optional custom radius, height, and segment count
 ```
 
 ### Material System
@@ -120,7 +121,8 @@ const material = new Material(
   0.5,            // Metallic (0.0-1.0)
   0.8,            // Roughness (0.0-1.0)
   1.0,            // Opacity (0.0-1.0)
-  false           // Wireframe
+  false,          // Wireframe
+  "basic"         // Shader ID (optional, defaults to "basic")
 );
 
 // Modify material at runtime
@@ -372,7 +374,7 @@ This ensures all GPU memory is properly released.
 - `CylinderGeometry(radiusTop, radiusBottom, height, segments)`
 - `PlaneGeometry(width, height, widthSegments, heightSegments)`
 - `ConeGeometry(radius, height, segments)`
-- `Material(color, metallic, roughness, opacity, wireframe)`
+- `Material(color, metallic, roughness, opacity, wireframe, shaderId)`
 - `Visible(enabled)`
 
 ### Resources

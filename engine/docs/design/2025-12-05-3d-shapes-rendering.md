@@ -747,8 +747,6 @@ installRenderPlugin(world, config); // 6. Rendering (last)
 - [ ] User-facing documentation (how to create 3D shapes)
 - [ ] API documentation for all components/resources
 - [ ] Example game demonstrating feature
-- [ ] Tutorial for beginners
-- [ ] Release notes
 - [ ] Demo examples (rotating cube, material gallery)
 
 ### Risks & Concerns
