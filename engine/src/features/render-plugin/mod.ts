@@ -16,6 +16,8 @@ export {
   ConeGeometry,
   CylinderGeometry,
   Material,
+  BasicMaterial,
+  PhongMaterial,
   PlaneGeometry,
   SphereGeometry,
   Visible,

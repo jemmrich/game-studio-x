@@ -4,7 +4,7 @@ import { RenderContext } from "../resources/render-context.ts";
 import { GeometryBufferCache } from "../resources/geometry-buffer-cache.ts";
 import { ShaderLibrary } from "../resources/shader-library.ts";
 import { LightingState } from "../resources/lighting-state.ts";
-import { Material } from "../components/material.ts";
+import { Material, BasicMaterial, PhongMaterial } from "../components/material.ts";
 import { Visible } from "../components/visible.ts";
 import { BoxGeometry } from "../components/box-geometry.ts";
 import { SphereGeometry } from "../components/sphere-geometry.ts";
@@ -65,6 +65,9 @@ export class MeshRenderSystem {
         uRoughness: gl.getUniformLocation(program, "uRoughness"),
         uOpacity: gl.getUniformLocation(program, "uOpacity"),
         uWireframe: gl.getUniformLocation(program, "uWireframe"),
+        // Phong material uniforms
+        uSpecularColor: gl.getUniformLocation(program, "uSpecularColor"),
+        uShininess: gl.getUniformLocation(program, "uShininess"),
       },
     };
 
@@ -187,10 +190,11 @@ export class MeshRenderSystem {
 
       if (!geometry || !transform) continue;
 
-      // Get material (defaults to basic shader if not present)
-      let material = world.get<Material>(entity, Material);
+      // Get material (check for BasicMaterial or PhongMaterial)
+      let material = world.get<BasicMaterial>(entity, BasicMaterial) || 
+                     world.get<PhongMaterial>(entity, PhongMaterial);
       if (!material) {
-        material = new Material();
+        material = new BasicMaterial();
       }
 
       // Get shader program based on material's shaderId
@@ -256,18 +260,55 @@ export class MeshRenderSystem {
       );
       gl.uniformMatrix3fv(locations.uniforms.uNormalMatrix, false, normalMat);
 
-      // Set material uniforms
-      gl.uniform4f(
-        locations.uniforms.uBaseColor,
-        material.color[0],
-        material.color[1],
-        material.color[2],
-        material.color[3]
-      );
-      gl.uniform1f(locations.uniforms.uMetallic, material.metallic);
-      gl.uniform1f(locations.uniforms.uRoughness, material.roughness);
-      gl.uniform1f(locations.uniforms.uOpacity, material.opacity);
-      gl.uniform1i(locations.uniforms.uWireframe, material.wireframe ? 1 : 0);
+      // Set material uniforms based on material type
+      if (material instanceof BasicMaterial) {
+        if (locations.uniforms.uBaseColor) {
+          gl.uniform4f(
+            locations.uniforms.uBaseColor,
+            material.color[0],
+            material.color[1],
+            material.color[2],
+            material.color[3]
+          );
+        }
+        if (locations.uniforms.uMetallic) {
+          gl.uniform1f(locations.uniforms.uMetallic, material.metallic);
+        }
+        if (locations.uniforms.uRoughness) {
+          gl.uniform1f(locations.uniforms.uRoughness, material.roughness);
+        }
+        if (locations.uniforms.uOpacity) {
+          gl.uniform1f(locations.uniforms.uOpacity, material.opacity);
+        }
+      } else if (material instanceof PhongMaterial) {
+        if (locations.uniforms.uBaseColor) {
+          gl.uniform4f(
+            locations.uniforms.uBaseColor,
+            material.color[0],
+            material.color[1],
+            material.color[2],
+            material.color[3]
+          );
+        }
+        if (locations.uniforms.uSpecularColor) {
+          gl.uniform3f(
+            locations.uniforms.uSpecularColor,
+            material.specularColor[0],
+            material.specularColor[1],
+            material.specularColor[2]
+          );
+        }
+        if (locations.uniforms.uShininess) {
+          gl.uniform1f(locations.uniforms.uShininess, material.shininess);
+        }
+        if (locations.uniforms.uOpacity) {
+          gl.uniform1f(locations.uniforms.uOpacity, material.opacity);
+        }
+      }
+
+      if (locations.uniforms.uWireframe) {
+        gl.uniform1i(locations.uniforms.uWireframe, material.wireframe ? 1 : 0);
+      }
 
       // Bind VAO and draw
       gl.bindVertexArray(bufferData.vao);

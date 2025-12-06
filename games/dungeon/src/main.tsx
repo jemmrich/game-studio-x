@@ -13,7 +13,8 @@ import {
   ConeGeometry,
   CylinderGeometry,
   installRenderPlugin,
-  Material,
+  BasicMaterial,
+  PhongMaterial,
   SphereGeometry,
   Visible,
 } from "@engine/features/render-plugin/mod.ts";
@@ -44,9 +45,9 @@ async function main() {
   const boxTransform = world.get<Transform>(box, Transform)!;
   boxTransform.position = [-3, 0, 0];
   world.add(box, new BoxGeometry());
-  world.add(box, new Material());
-  const boxMaterial = world.get<Material>(box, Material)!;
-  boxMaterial.shaderId = "rainbow"; 
+  const boxMaterial = new BasicMaterial();
+  boxMaterial.shaderId = "rainbow";
+  world.add(box, boxMaterial); 
   world.add(box, new Visible());
 
   // Create green sphere
@@ -55,9 +56,8 @@ async function main() {
   const sphereTransform = world.get<Transform>(sphere, Transform)!;
   sphereTransform.position = [0, 0, 0];
   world.add(sphere, new SphereGeometry());
-  world.add(sphere, new Material());
-  const sphereMaterial = world.get<Material>(sphere, Material)!;
-  sphereMaterial.color = [0, 1, 0, 1]; // Green
+  const sphereMaterial = new BasicMaterial([0, 1, 0, 1]); // Green
+  world.add(sphere, sphereMaterial);
   world.add(sphere, new Visible());
 
   // Create blue cylinder
@@ -66,9 +66,8 @@ async function main() {
   const cylinderTransform = world.get<Transform>(cylinder, Transform)!;
   cylinderTransform.position = [3, 0, 0];
   world.add(cylinder, new CylinderGeometry());
-  world.add(cylinder, new Material());
-  const cylinderMaterial = world.get<Material>(cylinder, Material)!;
-  cylinderMaterial.color = [0, 0, 1, 1]; // Blue
+  const cylinderMaterial = new BasicMaterial([0, 0, 1, 1]); // Blue
+  world.add(cylinder, cylinderMaterial);
   world.add(cylinder, new Visible());
 
   // Create yellow cone
@@ -77,9 +76,12 @@ async function main() {
   const coneTransform = world.get<Transform>(cone, Transform)!;
   coneTransform.position = [0, 3, 0];
   world.add(cone, new ConeGeometry());
-  world.add(cone, new Material());
-  const coneMaterial = world.get<Material>(cone, Material)!;
-  coneMaterial.color = [1, 1, 0, 1]; // Yellow
+  const coneMaterial = new PhongMaterial(
+    [1, 1, 0, 1], // Yellow diffuse
+    [1, 1, 1], // White specular
+    64 // Shiny
+  );
+  world.add(cone, coneMaterial);
   world.add(cone, new Visible());
 
   // Handle window resize

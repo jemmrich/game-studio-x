@@ -57,7 +57,7 @@ gameLoop(0);
 ```typescript
 import {
   BoxGeometry,
-  Material,
+  BasicMaterial,
   Visible,
 } from "@engine/features/render-plugin";
 import { Transform } from "@engine/features/transform-plugin";
@@ -66,7 +66,7 @@ import { Transform } from "@engine/features/transform-plugin";
 const box = world.createEntity();
 world.add(box, new Transform([0, 0, 0], [0, 0, 0], [1, 1, 1]));
 world.add(box, new BoxGeometry(1, 1, 1));
-world.add(box, new Material([1, 0, 0, 1])); // Red RGBA
+world.add(box, new BasicMaterial([1, 0, 0, 1])); // Red RGBA
 world.add(box, new Visible());
 ```
 
@@ -113,22 +113,48 @@ const cone = new ConeGeometry(radius, height, segments);
 
 ### Material System
 
-```typescript
-import { Material } from "@engine/features/render-plugin";
+The material system supports different material types, each optimized for different visual effects:
 
-const material = new Material(
+#### BasicMaterial
+
+Simple diffuse-only material suitable for basic objects:
+
+```typescript
+import { BasicMaterial } from "@engine/features/render-plugin";
+
+const material = new BasicMaterial(
   [1, 0, 0, 1],  // Color (RGBA)
   0.5,            // Metallic (0.0-1.0)
   0.8,            // Roughness (0.0-1.0)
   1.0,            // Opacity (0.0-1.0)
-  false,          // Wireframe
-  "basic"         // Shader ID (optional, defaults to "basic")
+  false           // Wireframe (optional)
 );
 
 // Modify material at runtime
 material.color = [0, 1, 0, 1]; // Change to green
 material.wireframe = true;      // Enable wireframe
 material.opacity = 0.5;         // Make semi-transparent
+material.shaderId = "rainbow";  // Can override shader
+```
+
+#### PhongMaterial
+
+Material with specular highlights for shiny surfaces:
+
+```typescript
+import { PhongMaterial } from "@engine/features/render-plugin";
+
+const material = new PhongMaterial(
+  [1, 1, 0, 1],  // Diffuse color (RGBA) - Yellow
+  [1, 1, 1],     // Specular color (RGB) - White highlights
+  64.0,           // Shininess (higher = sharper highlights)
+  1.0,            // Opacity (0.0-1.0)
+  false           // Wireframe (optional)
+);
+
+// Modify at runtime
+material.specularColor = [0.8, 0.8, 0.8];
+material.shininess = 32.0; // Less shiny
 ```
 
 ### Transform Component
@@ -266,19 +292,24 @@ Systems run in this order each frame:
 
 ### Component Composition Patterns
 
-**Minimal Entity** - Uses default material:
+**Minimal Entity** - Uses default BasicMaterial:
 ```typescript
 entity + Transform + BoxGeometry + Visible
 ```
 
-**Full Entity** - Custom appearance:
+**Full Entity** - Custom appearance with BasicMaterial:
 ```typescript
-entity + Transform + SphereGeometry + Material + Visible
+entity + Transform + SphereGeometry + BasicMaterial + Visible
+```
+
+**Shiny Entity** - With PhongMaterial for specular highlights:
+```typescript
+entity + Transform + SphereGeometry + PhongMaterial + Visible
 ```
 
 **Hidden Entity** - Components without visibility:
 ```typescript
-entity + Transform + CylinderGeometry + Material
+entity + Transform + CylinderGeometry + BasicMaterial
 // (No Visible component = not rendered)
 ```
 
@@ -357,10 +388,11 @@ This ensures all GPU memory is properly released.
 
 ## Future Enhancements
 
+- **StandardMaterial / PBRMaterial** - Physically-based rendering with metallic/roughness workflows
 - Instanced rendering for many identical objects
 - Frustum culling to skip off-screen geometry
 - Custom mesh loading (.obj, .gltf)
-- Advanced materials (PBR, normal mapping)
+- Advanced materials with normal mapping and displacement
 - Shadow mapping
 - Post-processing effects
 - Multiple light types (point, spot, area)
@@ -369,13 +401,19 @@ This ensures all GPU memory is properly released.
 
 ### Components
 
+#### Geometry
 - `BoxGeometry(width, height, depth)`
 - `SphereGeometry(radius, segments, rings)`
 - `CylinderGeometry(radiusTop, radiusBottom, height, segments)`
 - `PlaneGeometry(width, height, widthSegments, heightSegments)`
 - `ConeGeometry(radius, height, segments)`
-- `Material(color, metallic, roughness, opacity, wireframe, shaderId)`
-- `Visible(enabled)`
+
+#### Materials
+- `BasicMaterial(color, metallic, roughness, opacity, wireframe)` - Simple diffuse material
+- `PhongMaterial(color, specularColor, shininess, opacity, wireframe)` - Material with specular highlights
+
+#### Other
+- `Visible(enabled)` - Controls entity visibility
 
 ### Resources
 
