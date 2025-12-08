@@ -4,3 +4,4 @@ export { PrimitivesScene } from "./primatives.ts";
 export { DebugScene } from "./debug-demo.ts";
 export { GridScene } from "./grid.ts";
 export { ShapesScene } from "./shapes.ts";
+export { OrbitControlsDemoScene } from "./orbit-controls-demo.ts";

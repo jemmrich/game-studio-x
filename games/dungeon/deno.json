@@ -21,6 +21,7 @@
     "@types/react-dom": "npm:@types/react-dom@^19.2.3",
     "@vitejs/plugin-react": "npm:@vitejs/plugin-react@^5.1.1",
     "three": "npm:three@^0.181.2",
+    "three/addons/controls/OrbitControls.js": "npm:three@^0.181.2/examples/jsm/controls/OrbitControls.js",
     "tweakpane": "npm:tweakpane@^4.0.5",
     "typescript": "npm:typescript@^5.9.2",
     "typescript-eslint": "npm:typescript-eslint@^8.43.0",

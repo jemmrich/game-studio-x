@@ -35,6 +35,14 @@ Game Studio X is a modern, lightweight game engine built with Deno, TypeScript, 
 - **Position, Rotation, Scale**: Complete 3D transformation component for entities
 - **Transform Hierarchy**: Support for entity-based spatial transformations
 
+### Orbit Controls Plugin
+- **Intuitive Camera Control**: Click and drag to orbit around a focal point
+- **Pan & Zoom**: Middle-click to pan, scroll wheel to zoom in/out
+- **Auto-Rotation**: Optional automatic camera rotation for presentations
+- **Runtime Configuration**: Modify all settings on-the-fly without restarting
+- **Seamless Integration**: Works with the engine's ECS architecture and render plugin
+- **Production-Ready**: Comprehensive testing (70+ tests) and full documentation
+
 ### Component Library
 - **Name Component**: Assign human-readable names to entities for easier identification and debugging
 - **Tag Component**: Apply tags to entities for categorization and filtering

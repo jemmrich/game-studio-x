@@ -2,6 +2,11 @@ import { BaseScene } from "./base-scene.ts";
 import type { World } from "./world.ts";
 import { DemoUIText } from "../components/demo-ui-text.ts";
 import { Tag } from "../components/tag.ts";
+import { createOrbitControlPlugin } from "../features/orbit-control-plugin/mod.ts";
+import { OrbitControlSystem } from "../features/orbit-control-plugin/systems/orbit-control-system.ts";
+import { RenderContext } from "../features/render-plugin/resources/render-context.ts";
+import { CameraState } from "../features/render-plugin/resources/camera-state.ts";
+import { OrbitControlConfig } from "../features/orbit-control-plugin/resources/orbit-control-config.ts";
 
 /**
  * Specialized base class for engine demonstration scenes.
@@ -73,6 +78,9 @@ export abstract class DemoBaseScene extends BaseScene {
     // Add standard demo UI
     this.initDemoUI(world);
 
+    // Initialize orbit controls for the demo
+    this.initOrbitControls(world);
+
     // Call subclass implementation
     this.initDemo(world);
   }
@@ -92,6 +100,41 @@ export abstract class DemoBaseScene extends BaseScene {
           world.destroyEntity(entity);
         }
       }
+    }
+
+    // Reset camera state for a fresh view
+    const cameraState = world.getResource<CameraState>("CameraState");
+    if (cameraState) {
+      cameraState.position = [0, 0, 5];
+      cameraState.target = [0, 0, 0];
+      cameraState.up = [0, 1, 0];
+    }
+
+    // Reset orbit control config to defaults
+    const orbitConfig = world.getResource<OrbitControlConfig>(
+      "OrbitControlConfig"
+    );
+    if (orbitConfig) {
+      orbitConfig.rotateSpeed = 1.0;
+      orbitConfig.panSpeed = 1.0;
+      orbitConfig.zoomSpeed = 1.0;
+      orbitConfig.enableDamping = true;
+      orbitConfig.dampingFactor = 0.05;
+      orbitConfig.autoRotate = false;
+      orbitConfig.enabled = true;
+      // Note: minDistance and maxDistance are set per-demo in initDemo()
+    }
+
+    // Reset orbit controls to match the camera state
+    try {
+      const orbitSystem = world.getResource<OrbitControlSystem>(
+        "OrbitControlSystem"
+      );
+      if (orbitSystem) {
+        orbitSystem.resetToCamera(world);
+      }
+    } catch (error) {
+      // OrbitControlSystem may not be available in all demo scenes
     }
 
     // Re-initialize demo content
@@ -138,5 +181,44 @@ export abstract class DemoBaseScene extends BaseScene {
     // Note: FPS counter and reset button are typically managed by:
     // - A global FPS display system
     // - Global input handling (for R key → reset)
+  }
+
+  /**
+   * Initialize orbit controls for this demo scene.
+   * Sets up camera manipulation with mouse/touch input.
+   */
+  private initOrbitControls(world: World): void {
+    try {
+      // Get the canvas from RenderContext
+      const renderContext = world.getResource<RenderContext>("RenderContext");
+      
+      if (!renderContext || !renderContext.canvas) {
+        console.warn(
+          "[DemoBaseScene] Could not initialize orbit controls: RenderContext or canvas not found"
+        );
+        return;
+      }
+
+      // Create and install the orbit controls plugin
+      const orbitPlugin = createOrbitControlPlugin(renderContext.canvas, {
+        enableDamping: true,
+        dampingFactor: 0.05,
+        autoRotate: false, // Can be enabled per-demo if needed
+        rotateSpeed: 1.0,
+        panSpeed: 1.0,
+        zoomSpeed: 1.0,
+        minDistance: 2,
+        maxDistance: 100,
+      });
+
+      // Add the plugin to the world
+      orbitPlugin(world);
+    } catch (error) {
+      console.warn(
+        "[DemoBaseScene] Failed to initialize orbit controls:",
+        error
+      );
+      // Continue without orbit controls if plugin fails to load
+    }
   }
 }

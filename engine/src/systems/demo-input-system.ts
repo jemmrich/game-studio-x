@@ -24,7 +24,6 @@ export class DemoInputSystem {
         const currentScene = sceneManager.getCurrentScene();
         if (currentScene) {
           currentScene.reset(world);
-          console.log("Scene reset triggered by R key");
         }
       }
       // Clear the key press so it only triggers once per press

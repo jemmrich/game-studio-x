@@ -11,7 +11,7 @@ import {
   installRenderPlugin,
 } from "@engine/features/render-plugin/mod.ts";
 import { DemoUIRenderSystem, DemoInputSystem } from "@engine/systems/mod.ts";
-import { PrimitivesScene, DebugScene } from "@engine/demos/mod.ts";
+import * as DemoScenes from "@engine/demos/mod.ts";
 import { DungeonScene } from "./game/scenes/dungeon.ts";
 
 createRoot(document.getElementById("ui")!).render(
@@ -52,8 +52,8 @@ function main() {
   // const primitivesScene = new PrimitivesScene();
   // sceneManager.loadScene(primitivesScene);
 
-  const demoScene = new DebugScene();
-  sceneManager.loadScene(demoScene);
+  const currentScene = new DemoScenes.OrbitControlsDemoScene();
+  sceneManager.loadScene(currentScene);
 
   // Handle window resize
   globalThis.addEventListener("resize", () => {

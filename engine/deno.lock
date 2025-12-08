@@ -2,6 +2,7 @@
   "version": "5",
   "specifiers": {
     "npm:@vitest/ui@3": "3.2.4_vitest@3.2.4__@vitest+ui@3.2.4__vite@7.2.4___picomatch@4.0.3",
+    "npm:three@~0.181.2": "0.181.2",
     "npm:vitest@*": "3.2.4_@vitest+ui@3.2.4__vitest@3.2.4_vite@7.2.4__picomatch@4.0.3",
     "npm:vitest@3": "3.2.4_@vitest+ui@3.2.4__vitest@3.2.4_vite@7.2.4__picomatch@4.0.3"
   },
@@ -529,6 +530,9 @@
         "js-tokens"
       ]
     },
+    "three@0.181.2": {
+      "integrity": "sha512-k/CjiZ80bYss6Qs7/ex1TBlPD11whT9oKfT8oTGiHa34W4JRd1NiH/Tr1DbHWQ2/vMUypxksLnF2CfmlmM5XFQ=="
+    },
     "tinybench@2.9.0": {
       "integrity": "sha512-0+DUvqWMValLmha6lr4kD8iAMK1HzV0/aKnCtWb9v9641TnP/MFb7Pc2bxoxQjTXAErryXVgUOfv2YqNllqGeg=="
     },
@@ -660,6 +664,7 @@
     "dependencies": [
       "jsr:@std/assert@1",
       "npm:@vitest/ui@3",
+      "npm:three@~0.181.2",
       "npm:vitest@3"
     ]
   }
