@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { World } from "../../../core/world.ts";
 import { installTransformPlugin } from "../../transform-plugin/mod.ts";
-import { installDebugPlugin, DebugBounds, DebugGridOverlay, DebugLabel, DebugPerformance, DebugContext } from "../mod.ts";
+import { installDebugPlugin, DebugBounds, Debug2dGridOverlay, DebugLabel, DebugPerformance, DebugContext } from "../mod.ts";
 
 describe("DebugPlugin", () => {
   it("Basic Installation", () => {
@@ -32,7 +32,7 @@ describe("DebugPlugin", () => {
     expect(bounds.lineWidth).toBe(2);
     expect(bounds.filled).toBe(false);
 
-    const grid = new DebugGridOverlay();
+    const grid = new Debug2dGridOverlay();
     expect(grid.gridSize).toBe(1);
     expect(grid.enabled).toBe(true);
 

@@ -1,10 +1,10 @@
 import type { Color } from "../types.ts";
 
 /**
- * Component that renders a debug grid overlay.
+ * Component that renders a debug 2D grid overlay.
  * This is typically a global component managed by the scene/world.
  */
-export class DebugGridOverlay {
+export class Debug2dGridOverlay {
   /** Size of each grid cell */
   gridSize: number;
 

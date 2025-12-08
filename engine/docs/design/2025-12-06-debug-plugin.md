@@ -43,7 +43,7 @@ The debug plugin provides a collection of optional helper components and systems
   - Properties: color, lineWidth, filled (boolean for filled vs outline)
   - Works with existing Transform and rendering systems
   
-- **DebugGridOverlay** - Renders a grid overlay on the scene
+- **Debug2dGridOverlay** - Renders a 2D grid overlay on the scene
   - Properties: gridSize, color, opacity, enabled
   - Single global component managed by scene/world
   
@@ -65,8 +65,8 @@ The debug plugin provides a collection of optional helper components and systems
   - Calculates bounds and renders debug geometry
   - Uses camera system for proper viewport culling
 
-- **DebugGridRenderSystem** - Renders grid overlay
-  - Reads DebugGridOverlay component
+- **DebugGridRenderSystem** - Renders 2D grid overlay
+  - Reads Debug2dGridOverlay component
   - Renders grid aligned to world space or camera space (configurable)
 
 - **DebugLabelRenderSystem** - Renders debug labels on entities
@@ -114,7 +114,7 @@ The debug plugin provides a collection of optional helper components and systems
 
 ### Phase 3 — Implementation
 - [x] Create the Debug feature plugin folder layout
-- [x] Debug components created (DebugBounds, DebugGridOverlay, DebugLabel, DebugPerformance)
+- [x] Debug components created (DebugBounds, Debug2dGridOverlay, DebugLabel, DebugPerformance)
 - [x] Debug systems implemented (BoundsRender, GridRender, LabelRender, Performance)
 - [x] DebugContext resource created
 - [x] Plugin registration and initialization logic

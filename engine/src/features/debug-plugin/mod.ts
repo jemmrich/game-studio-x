@@ -8,7 +8,7 @@ import { DebugPerformanceSystem } from "./systems/debug-performance-system.ts";
 // Export all components
 export {
   DebugBounds,
-  DebugGridOverlay,
+  Debug2dGridOverlay,
   DebugLabel,
   DebugPerformance,
 } from "./components/mod.ts";
@@ -42,7 +42,7 @@ export interface DebugPluginConfig {
  *
  * This plugin provides:
  * - DebugBounds: Visual bounds/collision visualization
- * - DebugGridOverlay: Grid overlay for spatial reference
+ * - Debug2dGridOverlay: 2D grid overlay for spatial reference
  * - DebugLabel: Text labels attached to entities
  * - DebugPerformance: Performance metrics tracking
  *

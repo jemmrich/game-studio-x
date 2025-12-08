@@ -1,5 +1,5 @@
 import type { World } from "../../../core/world.ts";
-import { DebugGridOverlay } from "../components/debug-grid-overlay.ts";
+import { Debug2dGridOverlay } from "../components/debug-grid-overlay.ts";
 import { DebugContext } from "../resources/debug-context.ts";
 import type { HTMLCanvasElement, CanvasRenderingContext2D, Document, Window } from "../types.ts";
 
@@ -16,11 +16,11 @@ export class DebugGridRenderSystem {
     const debugContext = world.getResource<DebugContext>("DebugContext");
     if (!debugContext || !debugContext.isEnabled("grid")) return;
 
-    // Find the DebugGridOverlay component (should be on a global entity)
-    const entities = world.query(DebugGridOverlay).entities();
+    // Find the Debug2dGridOverlay component (should be on a global entity)
+    const entities = world.query(Debug2dGridOverlay).entities();
     if (entities.length === 0) return;
 
-    const gridOverlay = world.get(entities[0], DebugGridOverlay) as DebugGridOverlay;
+    const gridOverlay = world.get(entities[0], Debug2dGridOverlay) as Debug2dGridOverlay;
     if (!gridOverlay.enabled) return;
 
     // Initialize overlay canvas if needed
@@ -72,7 +72,7 @@ export class DebugGridRenderSystem {
     g.window.addEventListener("resize", resizeHandler);
   }
 
-  private renderGrid(gridOverlay: DebugGridOverlay): void {
+  private renderGrid(gridOverlay: Debug2dGridOverlay): void {
     if (!this.ctx || !this.overlayCanvas) return;
 
     const canvas = this.overlayCanvas;

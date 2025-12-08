@@ -14,7 +14,7 @@ import {
 import {
   installDebugPlugin,
   DebugBounds,
-  DebugGridOverlay,
+  Debug2dGridOverlay,
   DebugLabel,
   DebugPerformance,
 } from "../features/debug-plugin/mod.ts";
@@ -52,7 +52,7 @@ export class DebugScene extends DemoBaseScene {
 
     // Add global debug components
     const debugEntity = this.createEntity(world);
-    world.add(debugEntity, new DebugGridOverlay(1, { r: 0.5, g: 0.5, b: 0.5, a: 0.3 }, 0.3, true));
+    world.add(debugEntity, new Debug2dGridOverlay(1, { r: 0.5, g: 0.5, b: 0.5, a: 0.3 }, 0.3, true));
     world.add(debugEntity, new DebugPerformance(true, true, true, 30));
 
     // Create rainbow box with debug bounds and label
