@@ -1,0 +1,10 @@
+{
+  "name": "orbit-control-plugin",
+  "version": "1.0.0",
+  "description": "Three.js OrbitControls plugin for the game engine",
+  "imports": {
+    "three": "npm:three@^0.181.2",
+    "three/addons/controls/OrbitControls.js": "npm:three@^0.181.2/examples/jsm/controls/OrbitControls.js"
+  },
+  "nodeModulesDir": "auto"
+}
