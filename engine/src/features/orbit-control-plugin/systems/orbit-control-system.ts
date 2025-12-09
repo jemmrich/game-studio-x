@@ -35,7 +35,6 @@ export class OrbitControlSystem {
    */
   init(world: World): void {
     if (!this.canvas) {
-      console.error("[OrbitControlSystem] No canvas provided to constructor");
       return;
     }
 
@@ -55,20 +54,12 @@ export class OrbitControlSystem {
     }
 
     if (!cameraState) {
-      console.error(
-        "[OrbitControlSystem] CameraState resource not found. Ensure render plugin is initialized first."
-      );
       return;
     }
 
     if (!config) {
-      console.error(
-        "[OrbitControlSystem] OrbitControlConfig resource not found."
-      );
       return;
     }
-
-    console.log("[OrbitControlSystem] Initializing OrbitControls...");
 
     // Create a Three.js perspective camera from the engine's CameraState
     const camera = new ThreePerspectiveCamera(
@@ -113,18 +104,7 @@ export class OrbitControlSystem {
     // Perform initial update
     this.controls.update();
 
-    // Log initial camera transform
-    const distance = this.threeCamera.position.length();
-    console.log(
-      "[OrbitControlSystem] ON LOAD - Position:",
-      `[${this.threeCamera.position.x.toFixed(2)}, ${this.threeCamera.position.y.toFixed(2)}, ${this.threeCamera.position.z.toFixed(2)}]`,
-      "| Target:",
-      `[${this.controls.target.x.toFixed(2)}, ${this.controls.target.y.toFixed(2)}, ${this.controls.target.z.toFixed(2)}]`,
-      "| Distance:",
-      distance.toFixed(2)
-    );
 
-    console.log("[OrbitControlSystem] OrbitControls initialized successfully");
   }
 
   /**
@@ -323,16 +303,5 @@ export class OrbitControlSystem {
 
     // Update the controls to apply all changes
     this.controls.update();
-
-    // Log reset camera transform
-    const distance = this.threeCamera.position.length();
-    console.log(
-      "[OrbitControlSystem] AFTER RESET - Position:",
-      `[${this.threeCamera.position.x.toFixed(2)}, ${this.threeCamera.position.y.toFixed(2)}, ${this.threeCamera.position.z.toFixed(2)}]`,
-      "| Target:",
-      `[${this.controls.target.x.toFixed(2)}, ${this.controls.target.y.toFixed(2)}, ${this.controls.target.z.toFixed(2)}]`,
-      "| Distance:",
-      distance.toFixed(2)
-    );
   }
 }
