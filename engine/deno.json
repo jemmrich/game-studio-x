@@ -18,7 +18,7 @@
     "vitest": "npm:vitest@^3.0.0",
     "@vitest/ui": "npm:@vitest/ui@^3.0.0",
     "three": "npm:three@^0.181.2",
-    "three/addons/controls/OrbitControls.js": "npm:three@^0.181.2/examples/jsm/controls/OrbitControls.js"
+    "three/examples/jsm/controls/OrbitControls.js": "npm:three@^0.181.2/examples/jsm/controls/OrbitControls.js"
   },
   
   "lint": {
