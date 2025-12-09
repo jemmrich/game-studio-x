@@ -10,4 +10,8 @@ export class ResourceManager {
     if (!res) throw new Error(`Resource '${name}' not found`);
     return res;
   }
+
+  has(name: string): boolean {
+    return this.resources.has(name);
+  }
 }

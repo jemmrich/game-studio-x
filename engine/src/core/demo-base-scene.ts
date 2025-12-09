@@ -103,26 +103,34 @@ export abstract class DemoBaseScene extends BaseScene {
     }
 
     // Reset camera state for a fresh view
-    const cameraState = world.getResource<CameraState>("CameraState");
-    if (cameraState) {
-      cameraState.position = [0, 0, 5];
-      cameraState.target = [0, 0, 0];
-      cameraState.up = [0, 1, 0];
+    try {
+      const cameraState = world.getResource<CameraState>("CameraState");
+      if (cameraState) {
+        cameraState.position = [0, 0, 5];
+        cameraState.target = [0, 0, 0];
+        cameraState.up = [0, 1, 0];
+      }
+    } catch {
+      // CameraState not found, skip reset
     }
 
     // Reset orbit control config to defaults
-    const orbitConfig = world.getResource<OrbitControlConfig>(
-      "OrbitControlConfig"
-    );
-    if (orbitConfig) {
-      orbitConfig.rotateSpeed = 1.0;
-      orbitConfig.panSpeed = 1.0;
-      orbitConfig.zoomSpeed = 1.0;
-      orbitConfig.enableDamping = true;
-      orbitConfig.dampingFactor = 0.05;
-      orbitConfig.autoRotate = false;
-      orbitConfig.enabled = true;
-      // Note: minDistance and maxDistance are set per-demo in initDemo()
+    try {
+      const orbitConfig = world.getResource<OrbitControlConfig>(
+        "OrbitControlConfig"
+      );
+      if (orbitConfig) {
+        orbitConfig.rotateSpeed = 1.0;
+        orbitConfig.panSpeed = 1.0;
+        orbitConfig.zoomSpeed = 1.0;
+        orbitConfig.enableDamping = true;
+        orbitConfig.dampingFactor = 0.05;
+        orbitConfig.autoRotate = false;
+        orbitConfig.enabled = true;
+        // Note: minDistance and maxDistance are set per-demo in initDemo()
+      }
+    } catch {
+      // OrbitControlConfig not found, skip reset
     }
 
     // Reset orbit controls to match the camera state

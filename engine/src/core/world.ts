@@ -76,6 +76,10 @@ export class World {
     return this.resourceManager.get<T>(name);
   }
 
+  hasResource(name: string): boolean {
+    return this.resourceManager.has(name);
+  }
+
   // ─────────────────────────────────────────────
   // SYSTEMS
   // ─────────────────────────────────────────────
@@ -102,5 +106,28 @@ export class World {
   }
   _components() {
     return this.componentManager;
+  }
+
+  // ─────────────────────────────────────────────
+  // LIFECYCLE
+  // ─────────────────────────────────────────────
+
+  /**
+   * Get all entity IDs in the world
+   */
+  entities(): GUID[] {
+    return this.getAllEntities();
+  }
+
+  /**
+   * Dispose the world and clean up all resources
+   */
+  dispose(): void {
+    // Clear all entities
+    const allEntities = this.getAllEntities();
+    for (const entity of allEntities) {
+      this.destroyEntity(entity);
+    }
+    this.clearEntityRecycling();
   }
 }

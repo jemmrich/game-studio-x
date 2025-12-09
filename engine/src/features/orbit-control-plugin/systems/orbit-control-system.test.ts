@@ -1,4 +1,4 @@
-import { describe, it, beforeEach, afterEach, expect } from "vitest";
+import { describe, it, beforeEach, afterEach, expect, vi } from "vitest";
 import { World } from "../../../core/world.ts";
 import { OrbitControlSystem } from "./orbit-control-system.ts";
 import { OrbitControlConfig } from "../resources/orbit-control-config.ts";
@@ -7,11 +7,26 @@ import { CameraState } from "../../render-plugin/resources/camera-state.ts";
 /**
  * Mock HTMLCanvasElement for testing without a real DOM
  */
-class MockCanvasElement {
-  width: number = 800;
-  height: number = 600;
-  addEventListener: (event: string, callback: any) => void = () => {};
-  removeEventListener: (event: string, callback: any) => void = () => {};
+function createMockCanvas() {
+  return {
+    width: 800,
+    height: 600,
+    clientWidth: 800,
+    clientHeight: 600,
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+    style: {
+      touchAction: "none",
+    },
+    ownerDocument: {
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    },
+    getRootNode: vi.fn(() => ({
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    })),
+  } as any;
 }
 
 describe("OrbitControlSystem", () => {
@@ -29,7 +44,7 @@ describe("OrbitControlSystem", () => {
     world.addResource("CameraState", cameraState);
 
     // Create mock canvas
-    canvas = new MockCanvasElement();
+    canvas = createMockCanvas();
 
     // Create system
     system = new OrbitControlSystem(canvas as any);

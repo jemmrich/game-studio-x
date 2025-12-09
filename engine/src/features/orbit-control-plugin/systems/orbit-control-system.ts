@@ -39,8 +39,20 @@ export class OrbitControlSystem {
       return;
     }
 
-    const cameraState = world.getResource<CameraState>("CameraState");
-    const config = world.getResource<OrbitControlConfig>("OrbitControlConfig");
+    let cameraState: CameraState | undefined;
+    let config: OrbitControlConfig | undefined;
+
+    try {
+      cameraState = world.getResource<CameraState>("CameraState");
+    } catch {
+      // CameraState not found
+    }
+
+    try {
+      config = world.getResource<OrbitControlConfig>("OrbitControlConfig");
+    } catch {
+      // OrbitControlConfig not found
+    }
 
     if (!cameraState) {
       console.error(
@@ -124,8 +136,20 @@ export class OrbitControlSystem {
       return;
     }
 
-    const cameraState = world.getResource<CameraState>("CameraState");
-    const config = world.getResource<OrbitControlConfig>("OrbitControlConfig");
+    let cameraState: CameraState | undefined;
+    let config: OrbitControlConfig | undefined;
+
+    try {
+      cameraState = world.getResource<CameraState>("CameraState");
+    } catch {
+      // CameraState not found
+    }
+
+    try {
+      config = world.getResource<OrbitControlConfig>("OrbitControlConfig");
+    } catch {
+      // OrbitControlConfig not found
+    }
 
     if (!cameraState || !config) {
       return;
@@ -191,12 +215,14 @@ export class OrbitControlSystem {
   private setupResizeHandling(): void {
     if (!this.canvas || !this.threeCamera) return;
 
-    // Handle window resize
+    // Handle window resize (only if window object is available, e.g., in browser)
     this.onWindowResize = () => {
       this.updateAspectRatio();
     };
 
-    window.addEventListener("resize", this.onWindowResize);
+    if (typeof window !== "undefined") {
+      window.addEventListener("resize", this.onWindowResize);
+    }
 
     // Try to use ResizeObserver for canvas-specific resize detection
     if (typeof (globalThis as any).ResizeObserver !== "undefined") {
@@ -240,8 +266,8 @@ export class OrbitControlSystem {
       this.resizeObserver = null;
     }
 
-    if (this.onWindowResize && typeof globalThis !== "undefined") {
-      globalThis.removeEventListener("resize", this.onWindowResize);
+    if (this.onWindowResize && typeof window !== "undefined") {
+      window.removeEventListener("resize", this.onWindowResize);
       this.onWindowResize = null;
     }
 
@@ -258,7 +284,13 @@ export class OrbitControlSystem {
       return;
     }
 
-    const cameraState = world.getResource<CameraState>("CameraState");
+    let cameraState: CameraState | undefined;
+    try {
+      cameraState = world.getResource<CameraState>("CameraState");
+    } catch {
+      // CameraState not found
+    }
+
     if (!cameraState) {
       return;
     }
