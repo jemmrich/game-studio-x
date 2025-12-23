@@ -5,11 +5,18 @@ import { ResourceManager } from "../ecs/resource-manager.ts";
 import { Query } from "./query.ts";
 import type { GUID } from "../utils/guid.ts";
 
+interface WorldEvent {
+  type: string;
+  data: any;
+}
+
 export class World {
   private entityManager = new EntityManager();
   private componentManager = new ComponentManager();
   private resourceManager = new ResourceManager();
   private systemManager = new SystemManager(this);
+  private events: WorldEvent[] = [];
+  private eventListeners: Map<string, ((event: WorldEvent) => void)[]> = new Map();
 
   // ─────────────────────────────────────────────
   // ENTITY
@@ -98,6 +105,38 @@ export class World {
 
   query(...components: Function[]) {
     return new Query(this, components);
+  }
+
+  // ─────────────────────────────────────────────
+  // EVENTS
+  // ─────────────────────────────────────────────
+
+  emitEvent(type: string, data: any = {}): void {
+    const event: WorldEvent = { type, data };
+    this.events.push(event);
+
+    // Notify listeners immediately
+    const listeners = this.eventListeners.get(type);
+    if (listeners) {
+      for (const listener of listeners) {
+        listener(event);
+      }
+    }
+  }
+
+  getEvents(type: string): WorldEvent[] {
+    return this.events.filter((event) => event.type === type);
+  }
+
+  onEvent(type: string, listener: (event: WorldEvent) => void): void {
+    if (!this.eventListeners.has(type)) {
+      this.eventListeners.set(type, []);
+    }
+    this.eventListeners.get(type)!.push(listener);
+  }
+
+  clearEvents(): void {
+    this.events = [];
   }
 
   // internal access

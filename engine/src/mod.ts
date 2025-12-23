@@ -11,6 +11,10 @@ export { type Scene, SceneState } from "./core/scene.ts";
 export { BaseScene } from "./core/base-scene.ts";
 export { DemoBaseScene } from "./core/demo-base-scene.ts";
 
+// Utils
+export type { GUID } from "./utils/guid.ts";
+export { generateGUID, isGUID } from "./utils/guid.ts";
+
 // Components
 export * from "./components/mod.ts";
 

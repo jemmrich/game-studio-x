@@ -1,14 +1,14 @@
 export class CameraState {
-  position: [number, number, number] = [0, 0, 5];
+  position: [number, number, number] = [0, 0, 100];
   target: [number, number, number] = [0, 0, 0];
   up: [number, number, number] = [0, 1, 0];
   fov: number = 75;
-  near: number = 0.1;
+  near: number = 1;
   far: number = 1000;
   aspectRatio: number = 16 / 9;
 
   constructor(
-    position: [number, number, number] = [0, 0, 5],
+    position: [number, number, number] = [0, 0, 50],
     target: [number, number, number] = [0, 0, 0],
     up: [number, number, number] = [0, 1, 0],
     fov: number = 75,
