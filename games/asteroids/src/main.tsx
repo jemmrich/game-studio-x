@@ -13,6 +13,7 @@ import {
 import { DemoUIRenderSystem, DemoInputSystem } from "@engine/systems/mod.ts";
 import { GameplayScene } from "./game/scenes/gameplay.ts";
 import { RendererSystem } from "./game/systems/renderer-system.ts";
+import { RenderContext } from "./game/resources/render-context.ts";
 import * as THREE from "three";
 
 createRoot(document.getElementById("ui")!).render(
@@ -43,6 +44,10 @@ function main() {
     clearColor: [0, 0, 0, 1.0], // Black background
   });
 
+  // Render context resource
+  const canvas = document.querySelector("canvas") as HTMLCanvasElement;
+  world.addResource("render_context", new RenderContext(canvas));
+
   // Register demo UI render system (must run after render plugin is installed)
   // TODO: We should probably not be using any DEMO stuff in the actual game
   world.addSystem(new DemoUIRenderSystem());
@@ -56,7 +61,6 @@ function main() {
   threeScene.background = new THREE.Color(0x000000); // Black background
 
   // Register Three.js renderer system
-  const canvas = document.querySelector("canvas") as HTMLCanvasElement;
   world.addSystem(new RendererSystem(threeScene, canvas));
 
   // Load GameplayScene with Three.js rendering

@@ -46,11 +46,16 @@ export class CollisionHandlingSystem {
       // Respawn at center
       const transform = world.get<Transform>(this.shipEntityId, Transform);
       if (transform) {
-        const canvasWidth = 800; // TODO: get from render context
-        const canvasHeight = 600;
-        transform.position[0] = canvasWidth / 2;
-        transform.position[1] = canvasHeight / 2;
-        transform.rotation[2] = 0;
+        // Get canvas dimensions from render context
+        const renderContext = world.getResource("render_context") as
+          | { width: number; height: number }
+          | undefined;
+
+        if (renderContext) {
+          transform.position[0] = renderContext.width / 2;
+          transform.position[1] = renderContext.height / 2;
+          transform.rotation[2] = 0; // Reset rotation on respawn
+        }
       }
 
       // Make invincible for a moment
