@@ -5,10 +5,10 @@ The Ship Plugin encapsulates all functionality for the player-controlled ship in
 
 ## Components
 
-- **ShipComponent** - Core ship state (lives, acceleration, velocity limits, rotation, thrust, invincibility)
+- **ShipComponent** - Core ship state (lives, acceleration, velocity limits, rotation, thrust, invincibility, boundingBoxEnabled)
 - **Velocity** - Linear momentum for entities
 - **BoundingBox** - Axis-aligned bounding box for collision detection and debug visualization
-- **ShipGeometry** - Stores 2D point data for rendering ship as line strips
+- **ShipGeometry** - Stores 2D point data for Three.js rendering as line strips
 
 ## Systems
 
@@ -34,21 +34,27 @@ The Ship Plugin encapsulates all functionality for the player-controlled ship in
   - Manages lives and respawning
   - Emits game over event when lives are depleted
 
-- **ShipRenderSystem** - WebGL rendering
+- **ShipRenderSystem** - Three.js-based rendering
   - Renders ship geometry as line strips
-  - Renders bounding box for debug visualization
+  - Renders bounding box for debug visualization when `boundingBoxEnabled` is true
 
 ## Installation
 
 ```typescript
-import { installShipPlugin, spawnPlayerShip } from "./features/ship-plugin/mod.ts";
+import { installShipPlugin, spawnPlayerShip, ShipRenderSystem } from "./features/ship-plugin/mod.ts";
+import * as THREE from "three";
 
 // In your scene init:
 const shipPluginContext = installShipPlugin(world);
 
-// After spawning the ship:
+// Spawn the player ship:
 const shipId = spawnPlayerShip(world);
 shipPluginContext.setShipEntityId(shipId);
+
+// Set up Three.js rendering (done separately from the core plugin):
+const threeJsScene = new THREE.Scene();
+const ShipRenderSystem = new ShipRenderSystem(threeJsScene);
+world.addSystem(ShipRenderSystem);
 ```
 
 ## Configuration
@@ -56,17 +62,21 @@ shipPluginContext.setShipEntityId(shipId);
 The plugin uses hardcoded defaults that can be customized by modifying component constructors:
 
 ```typescript
-const ship = new ShipComponent(
-  3,      // lives
-  80,     // acceleration
-  120,    // maxVelocity
-  4.71    // rotationSpeed (radians/sec)
-);
+const ship = new ShipComponent({
+  lives: 3, // lives
+  acceleration: 80, // acceleration
+  maxVelocity: 120, // maxVelocity
+  rotationSpeed: 4.71,  // rotationSpeed (radians/sec)
+  boundingBoxEnabled: true // boundingBoxEnabled
+});
 ```
 
 ## Usage Example
 
 ```typescript
+import * as THREE from "three";
+import { installShipPlugin, spawnPlayerShip, ShipRenderSystem } from "./features/ship-plugin/mod.ts";
+
 const world = new World();
 installTransformPlugin(world);
 installRenderPlugin(world);
@@ -78,6 +88,11 @@ const shipContext = installShipPlugin(world);
 const shipId = spawnPlayerShip(world);
 shipContext.setShipEntityId(shipId);
 
+// Set up Three.js rendering system
+const threeJsScene = new THREE.Scene();
+const ShipRenderSystem = new ShipRenderSystem(threeJsScene);
+world.addSystem(ShipRenderSystem);
+
 // Run the game loop
 world.updateSystems(deltaTime);
 ```
@@ -86,7 +101,7 @@ world.updateSystems(deltaTime);
 
 - **@engine/core** - World, GUID
 - **@engine/features/transform-plugin** - Transform component
-- **@engine/features/render-plugin** - BasicMaterial, Visible components and rendering context
+- **three** - Three.js library for rendering
 - **@engine/components** - Name component
 
 ## Events Emitted
@@ -108,10 +123,11 @@ world.updateSystems(deltaTime);
 ## Known Limitations
 
 - Ship rendering uses simple line strips; no filled shapes or sprites
-- Collision detection is not yet implemented (CollisionHandlingSystem listens for events)
-- Missile spawning emits events but doesn't create visible missiles
-- Screen wrapping bounds are calculated from camera FOV at init time
+- Collision detection is not yet fully implemented (CollisionHandlingSystem listens for events)
+- Missile spawning system is separate from ship plugin and must be installed independently
+- Screen wrapping bounds aregated behind the `boundingBoxEnabled` property on ShipComponent
 - Bounding box rendering is debug-only and should be gated behind a debug flag
+- Three.js rendering must be set up separately in your scene (not included in installShipPlugin)
 
 ## Future Improvements
 

@@ -1,331 +1,170 @@
 import type { World } from "@engine/core/world.ts";
-import type { WebGL2RenderingContext } from "@engine/features/render-plugin/types.ts";
 import { ShipGeometry } from "../components/ship-geometry.ts";
+import { ShipComponent } from "../components/ship.ts";
 import { Transform } from "@engine/features/transform-plugin/mod.ts";
-import { BasicMaterial } from "@engine/features/render-plugin/mod.ts";
 import { BoundingBox } from "../components/bounding-box.ts";
-import type { RenderContext } from "@engine/features/render-plugin/resources/render-context.ts";
-import type { ShaderLibrary } from "@engine/features/render-plugin/resources/shader-library.ts";
+import * as THREE from "three";
 
 /**
- * ShipRenderSystem
- * Renders the player ship as a line strip using the ship's point geometry
+ * Three.js based ship rendering
+ * Reads ECS data and renders using Three.js
  */
 export class ShipRenderSystem {
-  private lineBuffers: Map<string, any> = new Map();
+  private scene: THREE.Scene;
+  private shipMesh: THREE.Line | null = null;
+  private bboxMesh: THREE.LineSegments | null = null;
+  private lastGeometryHash: string = "";
+  private lastBBoxHash: string = "";
+
+  constructor(scene: THREE.Scene) {
+    this.scene = scene;
+  }
 
   update(world: World, _dt: number): void {
-    if (!world.hasResource("RenderContext")) return;
-    
-    const renderContext = world.getResource<RenderContext>("RenderContext");
-    const shaderLibrary = world.getResource<ShaderLibrary>("ShaderLibrary");
-
-    if (!renderContext.gl) return;
-    const gl = renderContext.gl as any;
-
-    // Query for entities with triangle geometry (ship)
+    // Query for entities with ship geometry
     const query = world.query(ShipGeometry, Transform);
     const entities = query.entities();
 
     for (const entity of entities) {
       const geometry = world.get<ShipGeometry>(entity, ShipGeometry);
       const transform = world.get<Transform>(entity, Transform);
-      
+
       if (!geometry || !transform) continue;
+
+      // Check if geometry has changed by comparing point counts and values
+      const currentHash = this.hashGeometry(geometry);
       
-      const material = world.get<BasicMaterial>(entity, BasicMaterial);
-      if (!material) continue;
+      // Create or recreate ship mesh if it doesn't exist or geometry changed
+      if (!this.shipMesh || this.lastGeometryHash !== currentHash) {
+        // Dispose of old mesh if it exists
+        if (this.shipMesh) {
+          const geom = (this.shipMesh as any).geometry;
+          if (geom) geom.dispose();
+          const mat = (this.shipMesh as any).material;
+          if (mat) mat.dispose();
+          this.scene.remove(this.shipMesh);
+        }
+        
+        // Create new mesh
+        this.shipMesh = this.createShipMesh(geometry);
+        this.scene.add(this.shipMesh);
+        this.lastGeometryHash = currentHash;
+      }
 
-      this.renderShipLines(gl, geometry, transform, material, shaderLibrary, renderContext);
+      // Update position, rotation, scale from transform
+      this.shipMesh.position.set(transform.position[0], transform.position[1], transform.position[2]);
+      this.shipMesh.rotation.z = transform.rotation[2];
+      this.shipMesh.scale.set(transform.scale[0], transform.scale[1], transform.scale[2]);
 
-      // Render bounding box if present
+      // Handle bounding box rendering
       const bbox = world.get<BoundingBox>(entity, BoundingBox);
-      if (bbox) {
-        this.renderBoundingBox(gl, bbox, transform, shaderLibrary, renderContext);
+      const ship = world.get<ShipComponent>(entity, ShipComponent);
+      const shouldShowBBox = bbox && ship && ship.boundingBoxEnabled;
+      
+      if (shouldShowBBox) {
+        const bboxHash = this.hashBBox(bbox);
+        
+        // Create or recreate bbox mesh if needed
+        if (!this.bboxMesh || this.lastBBoxHash !== bboxHash) {
+          // Dispose of old bbox mesh
+          if (this.bboxMesh) {
+            const geom = (this.bboxMesh as any).geometry;
+            if (geom) geom.dispose();
+            const mat = (this.bboxMesh as any).material;
+            if (mat) mat.dispose();
+            this.scene.remove(this.bboxMesh);
+          }
+          
+          // Create new bbox mesh
+          this.bboxMesh = this.createBBoxMesh(bbox);
+          this.scene.add(this.bboxMesh);
+          this.lastBBoxHash = bboxHash;
+        }
+        
+        // Update bbox position, rotation, scale to match ship
+        this.bboxMesh.position.set(transform.position[0], transform.position[1], transform.position[2]);
+        this.bboxMesh.rotation.z = transform.rotation[2];
+        this.bboxMesh.scale.set(transform.scale[0], transform.scale[1], transform.scale[2]);
+      } else if (this.bboxMesh) {
+        // Remove bounding box if it's no longer present or disabled
+        const geom = (this.bboxMesh as any).geometry;
+        if (geom) geom.dispose();
+        const mat = (this.bboxMesh as any).material;
+        if (mat) mat.dispose();
+        this.scene.remove(this.bboxMesh);
+        this.bboxMesh = null;
+        this.lastBBoxHash = "";
       }
     }
   }
 
-  private renderShipLines(
-    gl: WebGL2RenderingContext,
-    geometry: ShipGeometry,
-    transform: Transform,
-    material: BasicMaterial,
-    shaderLibrary: ShaderLibrary,
-    renderContext: RenderContext
-  ): void {
-    if (geometry.points.length < 2) return;
-
-    const program = shaderLibrary.get("basic");
-    if (!program) return;
-
-    gl.useProgram(program);
-
-    // Get or create VAO for this geometry
-    const cacheKey = "ship_lines";
-    let vao = this.lineBuffers.get(cacheKey);
-
-    if (!vao) {
-      vao = this.createLineVAO(gl, geometry, program);
-      this.lineBuffers.set(cacheKey, vao);
-    }
-
-    gl.bindVertexArray(vao.vao);
-
-    // Set up matrices
-    const viewMatrix = renderContext.viewMatrix || this.identityMatrix();
-    const projMatrix = renderContext.projectionMatrix || this.identityMatrix();
-    const modelMatrix = this.buildModelMatrix(transform);
-
-    gl.uniformMatrix4fv(gl.getUniformLocation(program, "uView"), false, viewMatrix);
-    gl.uniformMatrix4fv(gl.getUniformLocation(program, "uProjection"), false, projMatrix);
-    gl.uniformMatrix4fv(gl.getUniformLocation(program, "uModel"), false, modelMatrix);
-
-    // Set material color
-    const color = material.color || [1, 1, 1, 1];
-    gl.uniform4f(
-      gl.getUniformLocation(program, "uBaseColor"),
-      color[0],
-      color[1],
-      color[2],
-      color[3]
-    );
-
-    gl.lineWidth(2);
-    // Draw as line strip
-    gl.drawArrays(gl.LINE_STRIP, 0, vao.vertexCount);
-    gl.bindVertexArray(null);
+  private hashGeometry(geometry: ShipGeometry): string {
+    // Create a simple hash of the geometry points
+    return geometry.points.map(p => `${p.x},${p.y}`).join("|");
   }
 
-  private createLineVAO(
-    gl: WebGL2RenderingContext,
-    geometry: ShipGeometry,
-    program: any
-  ): any {
-    const vao = gl.createVertexArray();
-    gl.bindVertexArray(vao);
-
-    const vertexCount = geometry.points.length;
-
-    // Convert 2D points to 3D vertices
-    const vertices: number[] = [];
-    const normals: number[] = [];
-    const uvs: number[] = [];
-
-    for (const point of geometry.points) {
-      vertices.push(point.x, point.y, 0);
-      normals.push(0, 0, 1); // Dummy normals (pointing up)
-      uvs.push(0, 0); // Dummy UVs
-    }
-
-    // Position buffer
-    const positionBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
-    const posAttrib = gl.getAttribLocation(program, "aPosition");
-    if (posAttrib >= 0) {
-      gl.enableVertexAttribArray(posAttrib);
-      gl.vertexAttribPointer(posAttrib, 3, gl.FLOAT, false, 0, 0);
-    }
-
-    // Normal buffer
-    const normalBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, normalBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(normals), gl.STATIC_DRAW);
-    const normalAttrib = gl.getAttribLocation(program, "aNormal");
-    if (normalAttrib >= 0) {
-      gl.enableVertexAttribArray(normalAttrib);
-      gl.vertexAttribPointer(normalAttrib, 3, gl.FLOAT, false, 0, 0);
-    }
-
-    // UV buffer
-    const uvBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, uvBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(uvs), gl.STATIC_DRAW);
-    const uvAttrib = gl.getAttribLocation(program, "aUV");
-    if (uvAttrib >= 0) {
-      gl.enableVertexAttribArray(uvAttrib);
-      gl.vertexAttribPointer(uvAttrib, 2, gl.FLOAT, false, 0, 0);
-    }
-
-    gl.bindVertexArray(null);
-
-    return {
-      vao,
-      positionBuffer,
-      normalBuffer,
-      uvBuffer,
-      vertexCount,
-    };
+  private hashBBox(bbox: BoundingBox): string {
+    return `${bbox.minX},${bbox.minY},${bbox.maxX},${bbox.maxY}`;
   }
 
-  private renderBoundingBox(
-    gl: WebGL2RenderingContext,
-    bbox: BoundingBox,
-    transform: Transform,
-    shaderLibrary: ShaderLibrary,
-    renderContext: RenderContext
-  ): void {
-    const program = shaderLibrary.get("basic");
-    if (!program) return;
-
-    gl.useProgram(program);
-
-    // Get or create bounding box VAO
-    const cacheKey = "ship_bbox";
-    let vao = this.lineBuffers.get(cacheKey);
-
-    if (!vao) {
-      vao = this.createBBoxVAO(gl, bbox, program);
-      this.lineBuffers.set(cacheKey, vao);
+  private createShipMesh(geometry: ShipGeometry): THREE.Line {
+    // Convert points to Three.js BufferGeometry
+    const points = geometry.points.map(p => new THREE.Vector3(p.x, p.y, 0));
+    
+    // Close the shape by adding the first point again
+    if (points.length > 0) {
+      points.push(points[0]);
     }
 
-    gl.bindVertexArray(vao.vao);
+    const bufferGeom = new THREE.BufferGeometry().setFromPoints(points);
 
-    // Set up matrices
-    const viewMatrix = renderContext.viewMatrix || this.identityMatrix();
-    const projMatrix = renderContext.projectionMatrix || this.identityMatrix();
-    const modelMatrix = this.buildModelMatrix(transform);
+    // White line material
+    const material = new THREE.LineBasicMaterial({
+      color: 0xffffff,
+      linewidth: 2,
+    });
 
-    gl.uniformMatrix4fv(gl.getUniformLocation(program, "uView"), false, viewMatrix);
-    gl.uniformMatrix4fv(gl.getUniformLocation(program, "uProjection"), false, projMatrix);
-    gl.uniformMatrix4fv(gl.getUniformLocation(program, "uModel"), false, modelMatrix);
-
-    // Yellow color for bounding box
-    gl.uniform4f(gl.getUniformLocation(program, "uBaseColor"), 1, 1, 0, 1);
-
-    gl.lineWidth(2);
-    // Draw as line loop
-    gl.drawArrays(gl.LINE_LOOP, 0, vao.vertexCount);
-    gl.bindVertexArray(null);
+    return new THREE.Line(bufferGeom, material);
   }
 
-  private createBBoxVAO(
-    gl: WebGL2RenderingContext,
-    bbox: BoundingBox,
-    program: any
-  ): any {
-    const vao = gl.createVertexArray();
-    gl.bindVertexArray(vao);
+  private createBBoxMesh(bbox: BoundingBox): THREE.LineSegments {
+    const geometry = new THREE.BufferGeometry();
 
-    // Create 4 corners of the bounding box
+    // Define the 4 corners and the lines connecting them
     const vertices = [
+      // Bottom left to bottom right
       bbox.minX, bbox.minY, 0,
       bbox.maxX, bbox.minY, 0,
+      // Bottom right to top right
+      bbox.maxX, bbox.minY, 0,
+      bbox.maxX, bbox.maxY, 0,
+      // Top right to top left
       bbox.maxX, bbox.maxY, 0,
       bbox.minX, bbox.maxY, 0,
+      // Top left to bottom left
+      bbox.minX, bbox.maxY, 0,
+      bbox.minX, bbox.minY, 0,
     ];
 
-    const normals = [
-      0, 0, 1,
-      0, 0, 1,
-      0, 0, 1,
-      0, 0, 1,
-    ];
+    geometry.setAttribute("position", new THREE.BufferAttribute(new Float32Array(vertices), 3));
 
-    const uvs = [
-      0, 0,
-      1, 0,
-      1, 1,
-      0, 1,
-    ];
+    // Yellow line material
+    const material = new THREE.LineBasicMaterial({
+      color: 0xffff00,
+      linewidth: 2,
+    });
 
-    // Position buffer
-    const positionBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
-    const posAttrib = gl.getAttribLocation(program, "aPosition");
-    if (posAttrib >= 0) {
-      gl.enableVertexAttribArray(posAttrib);
-      gl.vertexAttribPointer(posAttrib, 3, gl.FLOAT, false, 0, 0);
-    }
-
-    // Normal buffer
-    const normalBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, normalBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(normals), gl.STATIC_DRAW);
-    const normalAttrib = gl.getAttribLocation(program, "aNormal");
-    if (normalAttrib >= 0) {
-      gl.enableVertexAttribArray(normalAttrib);
-      gl.vertexAttribPointer(normalAttrib, 3, gl.FLOAT, false, 0, 0);
-    }
-
-    // UV buffer
-    const uvBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, uvBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(uvs), gl.STATIC_DRAW);
-    const uvAttrib = gl.getAttribLocation(program, "aUV");
-    if (uvAttrib >= 0) {
-      gl.enableVertexAttribArray(uvAttrib);
-      gl.vertexAttribPointer(uvAttrib, 2, gl.FLOAT, false, 0, 0);
-    }
-
-    gl.bindVertexArray(null);
-
-    return {
-      vao,
-      positionBuffer,
-      normalBuffer,
-      uvBuffer,
-      vertexCount: 4,
-    };
+    const lineSegments = new THREE.LineSegments(geometry, material);
+    return lineSegments;
   }
 
-  private buildModelMatrix(transform: Transform): Float32Array {
-    const mat = new Float32Array(16);
-    mat[0] = mat[5] = mat[10] = mat[15] = 1;
-
-    const pos = transform.position;
-    const rot = transform.rotation[2];
-    const scl = transform.scale;
-
-    // Translation
-    const tx = new Float32Array(16);
-    tx[0] = tx[5] = tx[10] = tx[15] = 1;
-    tx[12] = pos[0];
-    tx[13] = pos[1];
-    tx[14] = pos[2];
-
-    // Rotation (Z axis)
-    const c = Math.cos(rot);
-    const s = Math.sin(rot);
-    const rx = new Float32Array(16);
-    rx[0] = c;
-    rx[1] = s;
-    rx[4] = -s;
-    rx[5] = c;
-    rx[10] = 1;
-    rx[15] = 1;
-
-    // Scale
-    const sx = new Float32Array(16);
-    sx[0] = scl[0];
-    sx[5] = scl[1];
-    sx[10] = scl[2];
-    sx[15] = 1;
-
-    // Multiply: translation * rotation * scale
-    const temp = this.mulMat4(tx, rx);
-    return this.mulMat4(temp, sx);
-  }
-
-  private mulMat4(a: Float32Array, b: Float32Array): Float32Array {
-    const result = new Float32Array(16);
-    for (let i = 0; i < 4; i++) {
-      for (let j = 0; j < 4; j++) {
-        result[i * 4 + j] =
-          a[i * 4] * b[j] +
-          a[i * 4 + 1] * b[4 + j] +
-          a[i * 4 + 2] * b[8 + j] +
-          a[i * 4 + 3] * b[12 + j];
-      }
+  dispose(): void {
+    if (this.shipMesh) {
+      const geom = (this.shipMesh as any).geometry;
+      if (geom) geom.dispose();
+      const mat = (this.shipMesh as any).material;
+      if (mat) mat.dispose();
+      this.scene.remove(this.shipMesh);
     }
-    return result;
-  }
-
-  private identityMatrix(): Float32Array {
-    const mat = new Float32Array(16);
-    mat[0] = mat[5] = mat[10] = mat[15] = 1;
-    return mat;
   }
 }

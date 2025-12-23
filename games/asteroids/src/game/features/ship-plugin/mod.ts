@@ -4,6 +4,7 @@ import type { GUID } from "@engine/utils/guid.ts";
 // Components
 export {
   ShipComponent,
+  type ShipComponentOptions,
   Velocity,
   BoundingBox,
   ShipGeometry,
@@ -19,8 +20,11 @@ export {
   ShipRenderSystem,
 } from "./systems/mod.ts";
 
+// Factories
+export { spawnPlayerShip } from "./factories/mod.ts";
+
 // Utils
-export { spawnPlayerShip, PlayerShipGeometry } from "./utils/mod.ts";
+export { PlayerShipGeometry } from "./utils/player-ship-geometry.ts";
 
 import { PlayerInputSystem } from "./systems/player-input-system.ts";
 import { ShipMovementSystem } from "./systems/ship-movement-system.ts";

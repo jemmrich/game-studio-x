@@ -1,4 +1,3 @@
-export { spawnPlayerShip } from "./spawn-player-ship.ts";
 export { PlayerShipGeometry } from "./player-ship-geometry.ts";
 export {
   VECTOR_SHIP_WITHOUT_ENGINE,

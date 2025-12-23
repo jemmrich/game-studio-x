@@ -9,9 +9,9 @@ import { Name } from "@engine/components/mod.ts";
 import { ShipComponent } from "../components/ship.ts";
 import { Velocity } from "../components/velocity.ts";
 import { ShipGeometry } from "../components/ship-geometry.ts";
-import { PlayerShipGeometry } from "./player-ship-geometry.ts";
+import { PlayerShipGeometry } from "../utils/player-ship-geometry.ts";
 import { BoundingBox } from "../components/bounding-box.ts";
-import { VECTOR_SHIP_WITHOUT_ENGINE } from "./ship-geometry-constants.ts";
+import { VECTOR_SHIP_WITHOUT_ENGINE } from "../utils/ship-geometry-constants.ts";
 
 /**
  * Spawn the player ship at the center of the screen

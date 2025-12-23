@@ -4,9 +4,9 @@ import type { GUID } from "@engine/utils/guid.ts";
 import {
   installShipPlugin,
   spawnPlayerShip,
+  ShipRenderSystem,
   type ShipPluginContext,
 } from "../features/ship-plugin/mod.ts";
-import { ShipRendererSystem } from "../systems/ship-renderer-system.ts";
 import * as THREE from "three";
 
 export class GameplayScene extends BaseScene {
@@ -30,7 +30,7 @@ export class GameplayScene extends BaseScene {
     this.shipPluginContext.setShipEntityId(this.shipEntityId);
 
     // Create and register Three.js rendering system
-    const shipRenderSystem = new ShipRendererSystem(this.threeJsScene);
+    const shipRenderSystem = new ShipRenderSystem(this.threeJsScene);
     world.addSystem(shipRenderSystem);
   }
 }
