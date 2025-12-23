@@ -26,8 +26,17 @@ export class ShipMovementSystem {
     // Calculate game world bounds based on camera FOV and aspect ratio
     // This ensures wrapping works correctly in world coordinates
     if (!this.hasLoggedDimensions) {
-      const width = window.innerWidth;
-      const height = window.innerHeight;
+      const renderContext = world.getResource("render_context") as
+        | { width: number; height: number }
+        | undefined;
+
+      if (!renderContext) {
+        console.warn("[ShipMovementSystem] render_context resource not found");
+        return;
+      }
+
+      const width = renderContext.width;
+      const height = renderContext.height;
       const aspectRatio = width / height;
       
       // Camera is 100 units away, FOV is 60 degrees
@@ -68,6 +77,10 @@ export class ShipMovementSystem {
         velocity.x += thrustX;
         velocity.y += thrustY;
       }
+
+      // Apply velocity decay (friction) each frame
+      velocity.x *= shipComponent.velocityDecay;
+      velocity.y *= shipComponent.velocityDecay;
 
       // Clamp velocity to max
       const speed = Math.sqrt(velocity.x * velocity.x + velocity.y * velocity.y);
