@@ -78,9 +78,9 @@ export class ShipMovementSystem {
         velocity.y += thrustY;
       }
 
-      // Apply velocity decay (friction) each frame
-      velocity.x *= shipComponent.velocityDecay;
-      velocity.y *= shipComponent.velocityDecay;
+      // Apply friction to velocity each frame
+      velocity.x *= shipComponent.velocityFriction;
+      velocity.y *= shipComponent.velocityFriction;
 
       // Clamp velocity to max
       const speed = Math.sqrt(velocity.x * velocity.x + velocity.y * velocity.y);
