@@ -48,14 +48,6 @@ function main() {
   const canvas = document.querySelector("canvas") as HTMLCanvasElement;
   world.addResource("render_context", new RenderContext(canvas));
 
-  // Register demo UI render system (must run after render plugin is installed)
-  // TODO: We should probably not be using any DEMO stuff in the actual game
-  world.addSystem(new DemoUIRenderSystem());
-
-  // Register demo input system for keyboard handling
-  // TODO: We should probably not be using any DEMO stuff in the actual game
-  world.addSystem(new DemoInputSystem());
-
   // Create Three.js scene for rendering
   const threeScene = new THREE.Scene();
   threeScene.background = new THREE.Color(0x000000); // Black background
