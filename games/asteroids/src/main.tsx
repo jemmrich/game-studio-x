@@ -1,7 +1,8 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import "./ui/index.css";
-import App from "./ui/views/App/App.tsx";
+import {Hud} from "./ui/components/hud/Hud.tsx";
+import { Title } from "./ui/components/title/Title.tsx";
 
 import { Time, World, SceneManager, SceneLifecycleSystem } from "@engine/mod.ts";
 import {
@@ -19,7 +20,8 @@ import * as THREE from "three";
 
 createRoot(document.getElementById("ui")!).render(
   <StrictMode>
-    {/* <App /> */}
+    <Title />
+    {/* <Hud /> */}
   </StrictMode>,
 );
 

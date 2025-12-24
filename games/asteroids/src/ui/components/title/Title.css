@@ -1,0 +1,64 @@
+@font-face {
+  font-family: 'Hyperspace';
+  src: url('/hyperspace.ttf') format('truetype');
+}
+
+.title-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100vh;
+  margin: 0;
+  padding: 0;
+  font-family: 'Hyperspace', sans-serif;
+}
+
+.title-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2rem;
+  text-align: center;
+}
+
+.asteroids-title {
+  font-size: 8rem;
+  font-weight: 900;
+  color: #ffffff;
+  letter-spacing: 0.15em;
+  margin: 0;
+  line-height: 1;
+}
+
+.press-any-key {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #ff0000;
+  letter-spacing: 0.5em;
+  margin: 0;
+  animation: fadeInOut 1.5s ease-in-out infinite;
+}
+
+@keyframes fadeInOut {
+  0% {
+    opacity: 0.25;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.25;
+  }
+}
+
+@media (max-width: 768px) {
+  .asteroids-title {
+    font-size: 4rem;
+  }
+
+  .press-any-key {
+    font-size: 1rem;
+  }
+}
