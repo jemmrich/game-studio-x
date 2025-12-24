@@ -44,21 +44,21 @@ A missile is a lightweight projectile entity that travels in a direction and can
 ## Development Phases & Checklist
 
 ### Phase 1 — Discovery
-- [ ] Requirements confirmed
-- [ ] Technical feasibility reviewed
-- [ ] Dependencies identified (Transform, Velocity, Lifetime, Collision)
+- [x] Requirements confirmed
+- [x] Technical feasibility reviewed
+- [x] Dependencies identified (Transform, Velocity, Lifetime, Collision)
 
 ### Phase 2 — Design
-- [ ] Component data structures defined
-- [ ] System behavior documented
-- [ ] Spawn interface defined
-- [ ] Architecture reviewed with team
+- [x] Component data structures defined
+- [x] System behavior documented
+- [x] Spawn interface defined
+- [x] Architecture reviewed with team
 
 ### Phase 3 — Implementation
-- [ ] MissileComponent created
-- [ ] Missile lifetime system implemented
-- [ ] Missile collision handling implemented
-- [ ] Missile spawning utility created
+- [x] MissileComponent created
+- [x] Missile lifetime system implemented
+- [x] Missile collision handling implemented
+- [x] Missile spawning utility created
 
 ### Phase 4 — Integration & Testing
 - [ ] Unit tests for component logic

@@ -7,6 +7,10 @@ import {
   ShipRenderSystem,
   type ShipPluginContext,
 } from "../features/ship-plugin/mod.ts";
+import {
+  installMissilePlugin,
+  MissileRenderSystem,
+} from "../features/missile-plugin/mod.ts";
 import * as THREE from "three";
 
 export class GameplayScene extends BaseScene {
@@ -29,8 +33,14 @@ export class GameplayScene extends BaseScene {
     // Connect plugin systems to the spawned ship entity
     this.shipPluginContext.setShipEntityId(this.shipEntityId);
 
-    // Create and register Three.js rendering system
+    // Install the missile plugin (sets up missile systems)
+    installMissilePlugin(world);
+
+    // Create and register Three.js rendering systems
     const shipRenderSystem = new ShipRenderSystem(this.threeJsScene);
     world.addSystem(shipRenderSystem);
+
+    const missileRenderSystem = new MissileRenderSystem(this.threeJsScene);
+    world.addSystem(missileRenderSystem);
   }
 }

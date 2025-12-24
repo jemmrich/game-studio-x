@@ -14,7 +14,6 @@ export {
 export {
   PlayerInputSystem,
   ShipMovementSystem,
-  MissileSpawningSystem,
   CollisionHandlingSystem,
   ShipThrustVisualSystem,
   ShipRenderSystem,
@@ -29,7 +28,6 @@ export { PlayerShipGeometry } from "./utils/player-ship-geometry.ts";
 import { PlayerInputSystem } from "./systems/player-input-system.ts";
 import { ShipMovementSystem } from "./systems/ship-movement-system.ts";
 import { ShipThrustVisualSystem } from "./systems/ship-thrust-visual-system.ts";
-import { MissileSpawningSystem } from "./systems/missile-spawning-system.ts";
 import { CollisionHandlingSystem } from "./systems/collision-handling-system.ts";
 
 /**
@@ -42,20 +40,17 @@ export function installShipPlugin(world: World): ShipPluginContext {
   const playerInputSystem = new PlayerInputSystem();
   const shipMovementSystem = new ShipMovementSystem();
   const shipThrustVisualSystem = new ShipThrustVisualSystem();
-  const missileSpawningSystem = new MissileSpawningSystem();
   const collisionHandlingSystem = new CollisionHandlingSystem();
 
   world.addSystem(playerInputSystem);
   world.addSystem(shipMovementSystem);
   world.addSystem(shipThrustVisualSystem);
-  world.addSystem(missileSpawningSystem);
   world.addSystem(collisionHandlingSystem);
 
   return {
     playerInputSystem,
     shipMovementSystem,
     shipThrustVisualSystem,
-    missileSpawningSystem,
     collisionHandlingSystem,
     setShipEntityId(id: GUID) {
       playerInputSystem.setShipEntityId(id);
@@ -72,7 +67,6 @@ export interface ShipPluginContext {
   playerInputSystem: PlayerInputSystem;
   shipMovementSystem: ShipMovementSystem;
   shipThrustVisualSystem: ShipThrustVisualSystem;
-  missileSpawningSystem: MissileSpawningSystem;
   collisionHandlingSystem: CollisionHandlingSystem;
   setShipEntityId(id: GUID): void;
 }
