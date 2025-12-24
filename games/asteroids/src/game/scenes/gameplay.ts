@@ -59,30 +59,16 @@ export class GameplayScene extends BaseScene {
       [-100, 40, 0],   // Bottom-left
       [100, 40, 0],    // Bottom-right
       [0, -45, 0],     // Center-top
+      [-70, -20, 0],   // Mid-left upper
+      [70, 20, 0],     // Mid-right lower
+      [0, 30, 0],      // Center-lower
+      [-50, 0, 0],     // Mid-left center
+      [50, 0, 0],      // Mid-right center
     ];
 
-    // Spawn 5 large asteroids
+    // Spawn 10 large asteroids
     for (const position of spawnPositions) {
       spawnAsteroid(world, position, 3); // Size 3 = Large
-    }
-
-    // Spawn 3 medium asteroids for testing
-    const mediumPositions: Array<[number, number, number]> = [
-      [-70, -20, 0],
-      [70, 20, 0],
-      [0, 30, 0],
-    ];
-    for (const position of mediumPositions) {
-      spawnAsteroid(world, position, 2); // Size 2 = Medium
-    }
-
-    // Spawn 2 small asteroids for testing
-    const smallPositions: Array<[number, number, number]> = [
-      [-50, 0, 0],
-      [50, 0, 0],
-    ];
-    for (const position of smallPositions) {
-      spawnAsteroid(world, position, 1); // Size 1 = Small
     }
 
     // Create and register Three.js rendering systems

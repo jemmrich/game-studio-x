@@ -14,6 +14,8 @@ import { DemoUIRenderSystem, DemoInputSystem } from "@engine/systems/mod.ts";
 import { GameplayScene } from "./game/scenes/gameplay.ts";
 import { RendererSystem } from "./game/systems/renderer-system.ts";
 import { RenderContext } from "./game/resources/render-context.ts";
+import { PauseState } from "./game/resources/pause-state.ts";
+import { PauseSystem } from "./game/systems/pause-system.ts";
 import * as THREE from "three";
 
 createRoot(document.getElementById("ui")!).render(
@@ -33,8 +35,16 @@ function main() {
   const sceneManager = new SceneManager();
   world.addResource("sceneManager", sceneManager);
 
+  // Pause State resource
+  const pauseState = new PauseState();
+  world.addResource("pauseState", pauseState);
+
   // Register scene lifecycle system (must run early to handle scene transitions)
   world.addSystem(new SceneLifecycleSystem());
+
+  // Register pause system (runs regardless of pause state to allow unpausing)
+  const pauseSystem = new PauseSystem();
+  world.addSystem(pauseSystem);
 
   // Install engine plugins
   installTransformPlugin(world);
@@ -73,8 +83,16 @@ function main() {
     // Update the Time resource
     time.update(dt);
 
-    // Update all systems (includes scene lifecycle which calls scene.update)
-    world.updateSystems(dt);
+    // Always run pause system to check for pause toggle
+    pauseSystem.update(world, dt);
+
+    // Get pause state
+    const isPaused = pauseState.getIsPaused();
+
+    // Update all other systems only if not paused (includes scene lifecycle which calls scene.update)
+    if (!isPaused) {
+      world.updateSystems(dt);
+    }
 
     // Clear events at the end of the frame
     world.clearEvents();

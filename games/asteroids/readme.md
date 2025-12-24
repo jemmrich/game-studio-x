@@ -2,6 +2,17 @@
 
 The classic Asteroids game with a few additions.
 
+## Keyboard Controls
+
+| Action | Keys |
+|--------|------|
+| Rotate Left | `←` / `A` |
+| Rotate Right | `→` / `D` |
+| Thrust / Move Forward | `↑` / `W` |
+| Fire Missile | `Space` |
+| Pause / Resume | `P` |
+| Teleport / Reset Position | `Q` |
+
 ## Development
 
 ### Running Tests
