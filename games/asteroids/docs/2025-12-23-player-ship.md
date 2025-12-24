@@ -15,7 +15,7 @@ Implement the player-controlled ship as an ECS entity that serves as the primary
 Players can rotate, accelerate, decelerate, and fire projectiles. The ship wraps at screen edges and can be destroyed by asteroid collisions.
 
 ### Background / Context:
-The engine provides Transform, Mesh, and Collider components via plugins. The player ship composes these with Velocity, AngularVelocity, and ShipComponent for a complete entity.
+The engine provides Transform, Mesh, and Collider components via plugins. The player ship composes these with Velocity and ShipComponent for a complete entity.
 
 ## Feature Description
 
@@ -68,9 +68,9 @@ The player ship is a controllable entity that responds to input for rotation and
 - [x] Performance benchmarking
 
 ### Phase 5 — Polish & Iteration
-- [ ] Visual refinement
-- [ ] Control tuning based on feedback
-- [ ] Documentation completed
+- [x] Visual refinement (thrust visual system, engine-on/off states)
+- [x] Control tuning based on feedback
+- [x] Documentation completed
 
 ## Technical Specifications
 
@@ -93,23 +93,25 @@ The player ship feature depends on the following engine systems and components:
    - Will be extended or custom-built for player ship controls (rotation, thrust, firing)
    - Location: `engine/src/systems/demo-input-system.ts`
 
-4. **Collision System** (TO BE BUILT)
-   - Will provide `Collider` component and collision detection
-   - Needed for ship-asteroid collision handling
-   - Planned for future development phase
+4. **Collision System** (BUILT)
+   - Provides collision detection via BoundingBox component
+   - Handles ship-asteroid collision detection and response
+   - Part of ship-plugin as CollisionHandlingSystem
 
 ### Components
 
 #### ShipComponent
 ```typescript
-interface ShipComponent {
-  lives: number;            // Number of remaining lives (starts at 3)
-  acceleration: number;     // Thrust magnitude
-  maxVelocity: number;      // Speed cap
-  angularVelocity: number;  // Rotation speed
+class ShipComponent {
+  lives: number;              // Number of remaining lives (starts at 3)
+  acceleration: number;       // Thrust magnitude
+  maxVelocity: number;        // Speed cap
+  rotationSpeed: number;      // Rotation speed (radians/sec)
+  velocityFriction: number;   // Velocity decay per frame (0.98 = 2% decay)
   rotationDirection: 0 | 1 | -1;  // -1 = left, 0 = none, 1 = right
-  isThrusting: boolean;     // Currently accelerating
-  isInvincible: boolean;    // Immune to collisions after respawn
+  isThrusting: boolean;       // Currently accelerating
+  isInvincible: boolean;      // Immune to collisions after respawn
+  boundingBoxEnabled: boolean; // Enable debug bounding box visualization
 }
 ```
 
@@ -118,9 +120,10 @@ interface ShipComponent {
 #### PlayerInputSystem
 Captures keyboard input and updates ship rotation/thrust state, and triggers missile spawning:
 - W/Up Arrow: Set isThrusting = true, clear invincibility
-- A/Left Arrow: Set rotationDirection = -1, clear invincibility
-- D/Right Arrow: Set rotationDirection = 1, clear invincibility
+- A/Left Arrow: Set rotationDirection = 1 (rotate left), clear invincibility
+- D/Right Arrow: Set rotationDirection = -1 (rotate right), clear invincibility
 - Space: Emit "missile_spawn_requested" event with ship position and direction, clear invincibility
+- Q: Teleport ship to random position on screen
 
 #### ShipMovementSystem
 Applies physics to ship motion:
