@@ -44,7 +44,6 @@ export class MissileCollisionSystem {
     if (!this.missileQuery) return;
 
     const manager = world.getResource<MissileManager>("MissileManager");
-    if (!manager) return;
 
     // Get all missile entities
     const missiles = this.missileQuery.entities();
@@ -60,7 +59,9 @@ export class MissileCollisionSystem {
       // Get spawner entity to determine missile type (player or alien)
       if (!world.entityExists(missile.spawnerId)) {
         // Spawner no longer exists, remove missile
-        manager.removeMissile(missile.spawnerId, missileEntity);
+        if (manager) {
+          manager.removeMissile(missile.spawnerId, missileEntity);
+        }
         world.destroyEntity(missileEntity);
         continue;
       }

@@ -28,7 +28,6 @@ export class MissileLifetimeSystem {
     const missiles = query.entities();
 
     const manager = world.getResource<MissileManager>("MissileManager");
-    if (!manager) return;
 
     // Iterate in reverse to safely remove entities during iteration
     for (let i = missiles.length - 1; i >= 0; i--) {
@@ -42,8 +41,10 @@ export class MissileLifetimeSystem {
 
       // Check if lifetime has expired
       if (missile.lifetime <= 0) {
-        // Clean up missile tracking in MissileManager
-        manager.removeMissile(missile.spawnerId, missileId);
+        // Clean up missile tracking in MissileManager if available
+        if (manager) {
+          manager.removeMissile(missile.spawnerId, missileId);
+        }
 
         // Remove the entity from the world
         world.destroyEntity(missileId);
