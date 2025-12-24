@@ -23,13 +23,13 @@ export function spawnPlayerShip(world: World): GUID {
   const shipGeometry = new PlayerShipGeometry(VECTOR_SHIP_WITHOUT_ENGINE);
 
   // Position at center, scaled down to 0.2x
-  world.add(entity, new Transform([0, 0, 0], [0, 0, 0], [0.08, 0.08, 0.08]));
+  world.add(entity, new Transform([0, 0, 0], [0, 0, 0], [0.15, 0.15, 0.15]));
 
   // Velocity for momentum
   world.add(entity, new Velocity(0, 0, 0));
 
   // Ship-specific component
-  world.add(entity, new ShipComponent());
+  world.add(entity, new ShipComponent({ boundingBoxEnabled: false }));
 
   // Rendering - store processed geometry points
   world.add(entity, new ShipGeometry(shipGeometry.getPoints()));

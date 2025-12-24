@@ -30,7 +30,7 @@ export class ShipComponent {
       maxVelocity = 120,
       rotationSpeed = 4.71,
       boundingBoxEnabled = false,
-      velocityFriction = 0.98, // 2% decay per frame
+      velocityFriction = 0.995, // % decay per frame
     } = options || {};
 
     this.lives = lives;

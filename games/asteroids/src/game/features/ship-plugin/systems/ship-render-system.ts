@@ -148,9 +148,9 @@ export class ShipRenderSystem {
 
     geometry.setAttribute("position", new THREE.BufferAttribute(new Float32Array(vertices), 3));
 
-    // Yellow line material
+    // Green line material
     const material = new THREE.LineBasicMaterial({
-      color: 0xffff00,
+      color: 0x00ff00,
       linewidth: 2,
     });
 

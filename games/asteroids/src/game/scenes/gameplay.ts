@@ -11,6 +11,7 @@ import {
   installMissilePlugin,
   MissileRenderSystem,
 } from "../features/missile-plugin/mod.ts";
+import { spawnAsteroid, AsteroidRenderSystem, installAsteroidPlugin } from "../features/asteroid-plugin/mod.ts";
 import * as THREE from "three";
 
 export class GameplayScene extends BaseScene {
@@ -36,11 +37,51 @@ export class GameplayScene extends BaseScene {
     // Install the missile plugin (sets up missile systems)
     installMissilePlugin(world);
 
+    // Install the asteroid plugin (sets up asteroid systems)
+    installAsteroidPlugin(world);
+
+    // Spawn initial asteroids for testing (mix of sizes)
+    // Game world bounds are approximately X[-130, 130] Y[-57, 57], leave margin for safe spawn
+    const spawnPositions: Array<[number, number, number]> = [
+      [-100, -40, 0],  // Top-left
+      [100, -40, 0],   // Top-right
+      [-100, 40, 0],   // Bottom-left
+      [100, 40, 0],    // Bottom-right
+      [0, -45, 0],     // Center-top
+    ];
+
+    // Spawn 5 large asteroids
+    for (const position of spawnPositions) {
+      spawnAsteroid(world, position, 3); // Size 3 = Large
+    }
+
+    // Spawn 3 medium asteroids for testing
+    const mediumPositions: Array<[number, number, number]> = [
+      [-70, -20, 0],
+      [70, 20, 0],
+      [0, 30, 0],
+    ];
+    for (const position of mediumPositions) {
+      spawnAsteroid(world, position, 2); // Size 2 = Medium
+    }
+
+    // Spawn 2 small asteroids for testing
+    const smallPositions: Array<[number, number, number]> = [
+      [-50, 0, 0],
+      [50, 0, 0],
+    ];
+    for (const position of smallPositions) {
+      spawnAsteroid(world, position, 1); // Size 1 = Small
+    }
+
     // Create and register Three.js rendering systems
     const shipRenderSystem = new ShipRenderSystem(this.threeJsScene);
     world.addSystem(shipRenderSystem);
 
     const missileRenderSystem = new MissileRenderSystem(this.threeJsScene);
     world.addSystem(missileRenderSystem);
+
+    const asteroidRenderSystem = new AsteroidRenderSystem(this.threeJsScene);
+    world.addSystem(asteroidRenderSystem);
   }
 }

@@ -49,11 +49,11 @@ Asteroids are destructible entities that rotate, move through space, and break i
 - [x] Architecture reviewed with team
 
 ### Phase 3 — Implementation
-- [ ] Create AsteroidComponent
-- [ ] Implement AsteroidMovementSystem
-- [ ] Implement AsteroidCollisionSystem
-- [ ] Implement AsteroidDestructionSystem
-- [ ] Create spawner factory
+- [x] Create AsteroidComponent
+- [x] Implement AsteroidMovementSystem
+- [x] Implement AsteroidCollisionSystem
+- [x] Implement AsteroidDestructionSystem
+- [x] Create spawner factory
 
 ### Phase 4 — Testing
 - [ ] Unit tests for components

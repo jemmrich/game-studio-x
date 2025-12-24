@@ -3,6 +3,9 @@ import type { Query } from "@engine/core/query.ts";
 import type { GUID } from "@engine/utils/guid.ts";
 import { MissileComponent } from "../components/mod.ts";
 import { MissileManager } from "../resources/mod.ts";
+import { Transform } from "@engine/features/transform-plugin/mod.ts";
+import { AsteroidComponent } from "../../asteroid-plugin/components/mod.ts";
+import { getCollisionRadius } from "../../asteroid-plugin/config/asteroid-size-config.ts";
 
 /**
  * MissileCollisionSystem
@@ -34,37 +37,66 @@ import { MissileManager } from "../resources/mod.ts";
  */
 export class MissileCollisionSystem {
   private missileQuery: Query | null = null;
-
-  onAttach(world: World): void {
-    // Initialize the query to find all entities with MissileComponent
-    this.missileQuery = world.query(MissileComponent);
-  }
+  private asteroidQuery: Query | null = null;
 
   update(world: World, _deltaTime: number): void {
-    if (!this.missileQuery) return;
+    // Lazy initialize queries on first update
+    if (!this.missileQuery || !this.asteroidQuery) {
+      this.missileQuery = world.query(MissileComponent, Transform);
+      this.asteroidQuery = world.query(AsteroidComponent, Transform);
+    }
 
     const manager = world.getResource<MissileManager>("MissileManager");
 
     // Get all missile entities
     const missiles = this.missileQuery.entities();
+    const asteroids = this.asteroidQuery.entities();
 
     for (const missileEntity of missiles) {
       const missile = world.get<MissileComponent>(missileEntity, MissileComponent);
-      if (!missile) continue;
+      const missileTransform = world.get<Transform>(missileEntity, Transform);
+      
+      if (!missile || !missileTransform) continue;
 
-      // TODO: Integrate with collision system
-      // This stub will be implemented by checking collider state
-      // and detecting collisions with other entities
+      // Check for collisions with asteroids
+      let collided = false;
 
-      // Get spawner entity to determine missile type (player or alien)
-      if (!world.entityExists(missile.spawnerId)) {
-        // Spawner no longer exists, remove missile
-        if (manager) {
-          manager.removeMissile(missile.spawnerId, missileEntity);
+      for (const asteroidEntity of asteroids) {
+        const asteroid = world.get<AsteroidComponent>(asteroidEntity, AsteroidComponent);
+        const asteroidTransform = world.get<Transform>(asteroidEntity, Transform);
+        
+        if (!asteroid || !asteroidTransform) continue;
+
+        // Calculate distance between missile and asteroid
+        const dx = missileTransform.position[0] - asteroidTransform.position[0];
+        const dy = missileTransform.position[1] - asteroidTransform.position[1];
+        const distance = Math.sqrt(dx * dx + dy * dy);
+
+        // Get collision radius for this asteroid size
+        const collisionRadius = getCollisionRadius(asteroid.sizeTier);
+
+        // Missile collision radius (small, ~1 unit)
+        const missileRadius = 1;
+
+        // Check if collision occurred
+        if (distance < collisionRadius + missileRadius) {
+          // Emit collision event for asteroid destruction system
+          world.emitEvent("asteroid_projectile_collision", {
+            asteroidId: asteroidEntity,
+            projectileId: missileEntity,
+          });
+
+          // Remove the missile
+          if (manager) {
+            manager.removeMissile(missile.spawnerId, missileEntity);
+          }
+          world.destroyEntity(missileEntity);
+          collided = true;
+          break;
         }
-        world.destroyEntity(missileEntity);
-        continue;
       }
+
+      if (collided) continue;
 
       // Collision handling will be implemented in game-specific subclasses
       // or through collision event listeners
