@@ -56,16 +56,16 @@ Asteroids are destructible entities that rotate, move through space, and break i
 - [x] Create spawner factory
 
 ### Phase 4 — Testing
-- [ ] Unit tests for components
-- [ ] Integration tests for movement and collision
-- [ ] Screen wrap edge cases
-- [ ] Performance tests (50+ asteroids)
+- [x] Unit tests for components
+- [x] Integration tests for movement and collision
+- [x] Screen wrap edge cases
+- [x] Performance tests (50+ asteroids)
 
 ### Phase 5 — Documentation & Release
-- [ ] Component API documentation
-- [ ] System behavior documentation
-- [ ] Usage examples
-- [ ] Update game README
+- [x] Component API documentation
+- [x] System behavior documentation
+- [x] Usage examples
+- [x] Update game README
 
 ## Technical Details
 
@@ -142,3 +142,201 @@ Mitigation:
 - Use bounding sphere checks before precise collision tests
 - Implement spatial partitioning if performance degrades
 - Screen wrap waits for asteroid to be completely off-screen before appearing on opposite side (simplifies edge cases)
+
+---
+
+## Component API Documentation
+
+### AsteroidComponent
+
+```typescript
+interface AsteroidComponentOptions {
+  sizeTier?: AsteroidSizeTier;      // 1 | 2 | 3 (default: 3)
+  rotationSpeed?: number;            // Default: 1
+  boundingSphereEnabled?: boolean;   // Default: false
+}
+
+class AsteroidComponent {
+  sizeTier: AsteroidSizeTier;
+  rotationSpeed: number;
+  boundingSphereEnabled: boolean;
+  
+  constructor(options?: AsteroidComponentOptions);
+  
+  /**
+   * Get velocity range for asteroid size tier
+   * Tier 3 (Large):  20-30 u/s
+   * Tier 2 (Medium): 25-35 u/s
+   * Tier 1 (Small):  30-40 u/s
+   */
+  static getVelocityRange(sizeTier: AsteroidSizeTier): { min: number; max: number };
+}
+```
+
+### Velocity Component
+
+Shared component representing linear velocity in 3D space:
+
+```typescript
+interface Velocity {
+  x: number;  // Velocity in X axis (pixels/frame)
+  y: number;  // Velocity in Y axis (pixels/frame)
+  z: number;  // Velocity in Z axis (typically 0 for asteroids)
+}
+```
+
+### AngularVelocity Component
+
+Represents rotational velocity around axes:
+
+```typescript
+interface AngularVelocity {
+  x: number;  // Rotation around X axis (typically 0)
+  y: number;  // Rotation around Y axis (typically 0)
+  z: number;  // Rotation around Z axis (typically -1 to 1)
+}
+```
+
+---
+
+## System Behavior Documentation
+
+### AsteroidMovementSystem
+
+**Purpose**: Apply velocity and angular velocity to asteroids each frame.
+
+**Behavior**:
+- Reads Velocity and AngularVelocity components
+- Updates Transform position based on velocity
+- Updates Transform rotation based on angular velocity
+- Executes once per frame
+
+**Components Required**: Transform, Velocity, AngularVelocity, AsteroidComponent
+
+### AsteroidCollisionSystem
+
+**Purpose**: Handle collision detection between projectiles and asteroids.
+
+**Behavior**:
+- Detects collisions between missiles and asteroids using sphere-based collision
+- Marks hit asteroids for destruction
+- Records collision data for point scoring
+- Does not immediately destroy asteroids (handled by AsteroidDestructionSystem)
+
+**Components Required**: Transform, Collider, AsteroidComponent (asteroids); Projectile component (missiles)
+
+### AsteroidDestructionSystem
+
+**Purpose**: Process asteroid destruction and spawn smaller asteroids.
+
+**Behavior**:
+- Processes marked-for-destruction asteroids
+- Size 3 → spawns 2 Size 2 asteroids
+- Size 2 → spawns 2 Size 1 asteroids
+- Size 1 → despawns (no spawn)
+- Removes destroyed asteroid from world
+- Awards points based on asteroid size
+
+**Spawn Offsets**: New asteroids spawn in a circle around the destroyed asteroid's position, evenly spaced.
+
+**Execution Order**: Must run after AsteroidCollisionSystem (receives collision data)
+
+### AsteroidSpawningSystem
+
+**Purpose**: Initial wave spawning and level management.
+
+**Behavior**:
+- Spawns initial asteroids at level start
+- Respawns asteroids when wave is cleared
+- Respects safe zones around player
+- Spreads spawns over multiple frames to avoid stutter
+
+**Initial Configuration**: 5-7 large asteroids (size 3) at random positions (avoiding safe zone)
+
+### AsteroidScreenWrapSystem
+
+**Purpose**: Wrap asteroids around screen edges in toroidal space.
+
+**Behavior**:
+- Monitors asteroid position against screen bounds
+- Wraps X and Y coordinates when off-screen
+- Waits for asteroid to be completely off-screen before wrapping (prevents jitter)
+- Z position not affected
+
+---
+
+## Usage Examples
+
+### Spawning a Single Asteroid
+
+```typescript
+import { spawnAsteroid } from "./features/asteroid-plugin/factories/spawn-asteroid.ts";
+
+// Spawn a large asteroid at position (100, 200)
+const asteroidId = spawnAsteroid(
+  world,
+  [100, 200, 0],
+  3  // Size tier: 1 (small), 2 (medium), or 3 (large)
+);
+```
+
+### Spawning Multiple Asteroids
+
+```typescript
+import { spawnAsteroid } from "./features/asteroid-plugin/factories/spawn-asteroid.ts";
+
+// Spawn initial wave of asteroids
+for (let i = 0; i < 7; i++) {
+  const x = Math.random() * screenWidth;
+  const y = Math.random() * screenHeight;
+  
+  // Avoid spawning near player (e.g., center of screen)
+  if (Math.abs(x - screenWidth/2) < 100 && Math.abs(y - screenHeight/2) < 100) {
+    i--;  // Try again
+    continue;
+  }
+  
+  spawnAsteroid(world, [x, y, 0], 3);
+}
+```
+
+### Installing the Plugin
+
+```typescript
+import { installAsteroidPlugin } from "./features/asteroid-plugin/mod.ts";
+
+// In your game scene setup:
+const { destructionSystem, spawningSystem } = installAsteroidPlugin(world);
+
+// Add destruction system after collision detection
+world.addSystem(destructionSystem);
+
+// Add spawning system at appropriate time in execution order
+world.addSystem(spawningSystem);
+```
+
+### Querying for All Asteroids
+
+```typescript
+import { AsteroidComponent } from "./features/asteroid-plugin/mod.ts";
+
+// Get count of all asteroids
+const asteroidQuery = world.query(AsteroidComponent);
+const asteroidCount = asteroidQuery.entities.length;
+
+// Get only large asteroids
+const largeAsteroids = asteroidQuery.entities
+  .map(id => world.get(id, AsteroidComponent))
+  .filter(comp => comp.sizeTier === 3);
+```
+
+### Destroying an Asteroid Manually
+
+```typescript
+import { AsteroidComponent } from "./features/asteroid-plugin/mod.ts";
+
+// Mark asteroid for destruction by removing it
+world.removeEntity(asteroidId);
+
+// This triggers the destruction system to spawn smaller asteroids
+```

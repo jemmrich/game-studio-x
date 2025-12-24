@@ -1,7 +1,7 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import "./ui/index.css";
-// import App from "./ui/views/App/App.tsx";
+import App from "./ui/views/App/App.tsx";
 
 import { Time, World, SceneManager, SceneLifecycleSystem } from "@engine/mod.ts";
 import {
@@ -10,7 +10,6 @@ import {
 import {
   installRenderPlugin,
 } from "@engine/features/render-plugin/mod.ts";
-import { DemoUIRenderSystem, DemoInputSystem } from "@engine/systems/mod.ts";
 import { GameplayScene } from "./game/scenes/gameplay.ts";
 import { RendererSystem } from "./game/systems/renderer-system.ts";
 import { RenderContext } from "./game/resources/render-context.ts";

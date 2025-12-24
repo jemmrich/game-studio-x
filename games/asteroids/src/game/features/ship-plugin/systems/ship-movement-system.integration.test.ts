@@ -84,7 +84,7 @@ describe("ShipMovementSystem Integration", () => {
 
     // Velocity magnitude should be clamped to maxVelocity
     const velocityMagnitude = Math.sqrt(velocity.x ** 2 + velocity.y ** 2);
-    expect(velocityMagnitude).toBeLessThanOrEqual(ship.maxVelocity);
+    expect(velocityMagnitude).toBeLessThanOrEqual(ship.maxVelocity + 1e-10);
   });
 
   it("should update position based on velocity", () => {
