@@ -12,6 +12,7 @@ import {
   installRenderPlugin,
 } from "@engine/features/render-plugin/mod.ts";
 import { GameplayScene } from "./game/scenes/gameplay.ts";
+import { TitleScene } from "./game/scenes/title-scene.ts";
 import { RendererSystem } from "./game/systems/renderer-system.ts";
 import { RenderContext } from "./game/resources/render-context.ts";
 import { PauseState } from "./game/resources/pause-state.ts";
@@ -67,7 +68,8 @@ function main() {
   world.addSystem(new RendererSystem(threeScene, canvas));
 
   // Load GameplayScene with Three.js rendering
-  const currentScene = new GameplayScene(threeScene);
+  // const currentScene = new GameplayScene(threeScene);
+  const currentScene = new TitleScene(threeScene);
   sceneManager.loadScene(currentScene);
 
   // Handle window resize
