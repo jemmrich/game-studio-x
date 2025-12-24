@@ -2,8 +2,9 @@
   "tasks": {
     "dev": "deno run -A --node-modules-dir=auto npm:vite",
     "build": "deno run -A --node-modules-dir=auto npm:vite build",
-    "test": "deno run -A --node-modules-dir=auto npm:vitest run",
-    "test:watch": "deno run -A --node-modules-dir=auto npm:vitest"
+    "test": "node node_modules/vitest/vitest.mjs run",
+    "test:watch": "node node_modules/vitest/vitest.mjs",
+    "test:performance": "node node_modules/vitest/vitest.mjs run --reporter=verbose **/*bench.ts"
   },
   "imports": {
     "@dimforge/rapier3d-compat": "npm:@dimforge/rapier3d-compat@^0.19.3",

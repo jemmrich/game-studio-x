@@ -62,10 +62,10 @@ The player ship is a controllable entity that responds to input for rotation and
 - [x] Game over event emission when lives reach 0
 
 ### Phase 4 — Integration & Testing
-- [ ] Unit tests for component logic
-- [ ] Integration tests with other systems
-- [ ] Manual testing of controls
-- [ ] Performance benchmarking
+- [x] Unit tests for component logic
+- [x] Integration tests with other systems
+- [x] Manual testing of controls
+- [x] Performance benchmarking
 
 ### Phase 5 — Polish & Iteration
 - [ ] Visual refinement
