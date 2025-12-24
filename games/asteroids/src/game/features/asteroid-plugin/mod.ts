@@ -17,7 +17,10 @@ import { AsteroidSpawningSystem } from "./systems/asteroid-spawning-system.ts";
  * Install the Asteroid Plugin
  * Sets up all systems needed for asteroid movement, collision, and destruction
  */
-export function installAsteroidPlugin(world: World): void {
+export function installAsteroidPlugin(world: World): {
+  destructionSystem: AsteroidDestructionSystem;
+  spawningSystem: AsteroidSpawningSystem;
+} {
   const asteroidMovementSystem = new AsteroidMovementSystem();
   const asteroidCollisionSystem = new AsteroidCollisionSystem();
   const asteroidDestructionSystem = new AsteroidDestructionSystem();
@@ -25,6 +28,9 @@ export function installAsteroidPlugin(world: World): void {
 
   world.addSystem(asteroidMovementSystem);
   world.addSystem(asteroidCollisionSystem);
-  world.addSystem(asteroidDestructionSystem);
-  world.addSystem(asteroidSpawningSystem);
+  // AsteroidDestructionSystem and AsteroidSpawningSystem are NOT added here
+  // They will be added after CollisionHandlingSystem in the correct order
+
+  // Return both systems so they can be added in the correct order in gameplay scene
+  return { destructionSystem: asteroidDestructionSystem, spawningSystem: asteroidSpawningSystem };
 }

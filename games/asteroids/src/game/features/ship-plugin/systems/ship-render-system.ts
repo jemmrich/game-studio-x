@@ -2,6 +2,7 @@ import type { World } from "@engine/core/world.ts";
 import { ShipGeometry } from "../components/ship-geometry.ts";
 import { ShipComponent } from "../components/ship.ts";
 import { Transform } from "@engine/features/transform-plugin/mod.ts";
+import { Visible } from "@engine/features/render-plugin/mod.ts";
 import { BoundingBox } from "../components/bounding-box.ts";
 import * as THREE from "three";
 
@@ -15,21 +16,64 @@ export class ShipRenderSystem {
   private bboxMesh: THREE.LineSegments | null = null;
   private lastGeometryHash: string = "";
   private lastBBoxHash: string = "";
+  private invincibilityTime: number = 0; // Track time for fade effect
+  private wasVisible: boolean = true; // Track visibility state for respawn
 
   constructor(scene: THREE.Scene) {
     this.scene = scene;
   }
 
-  update(world: World, _dt: number): void {
+  update(world: World, dt: number): void {
     // Query for entities with ship geometry
     const query = world.query(ShipGeometry, Transform);
     const entities = query.entities();
 
+    // If no entities found but we have a mesh, clean it up (entity was destroyed)
+    if (entities.length === 0 && this.shipMesh) {
+      const geom = (this.shipMesh as any).geometry;
+      if (geom) geom.dispose();
+      const mat = (this.shipMesh as any).material;
+      if (mat) mat.dispose();
+      this.scene.remove(this.shipMesh);
+      this.shipMesh = null;
+      this.lastGeometryHash = "";
+      return;
+    }
+
     for (const entity of entities) {
       const geometry = world.get<ShipGeometry>(entity, ShipGeometry);
       const transform = world.get<Transform>(entity, Transform);
+      const ship = world.get<ShipComponent>(entity, ShipComponent);
+      const visible = world.get<Visible>(entity, Visible);
 
       if (!geometry || !transform) continue;
+
+      // Skip rendering if not visible
+      if (visible && !visible.enabled) {
+        // Hide meshes but keep them for when visible becomes true again
+        if (this.shipMesh) {
+          this.shipMesh.visible = false;
+        }
+        if (this.bboxMesh) {
+          this.bboxMesh.visible = false;
+        }
+        this.wasVisible = false;
+        continue;
+      }
+
+      // If ship just became visible, reset invincibility timer for smooth pulsing effect
+      if (!this.wasVisible && visible && visible.enabled) {
+        this.invincibilityTime = 0;
+      }
+      this.wasVisible = true;
+
+      // Make meshes visible when visible.enabled is true
+      if (this.shipMesh) {
+        this.shipMesh.visible = true;
+      }
+      if (this.bboxMesh) {
+        this.bboxMesh.visible = true;
+      }
 
       // Check if geometry has changed by comparing point counts and values
       const currentHash = this.hashGeometry(geometry);
@@ -56,9 +100,22 @@ export class ShipRenderSystem {
       this.shipMesh.rotation.z = transform.rotation[2];
       this.shipMesh.scale.set(transform.scale[0], transform.scale[1], transform.scale[2]);
 
+      // Handle invincibility fade effect
+      if (ship && ship.isInvincible) {
+        this.invincibilityTime += dt;
+        // Create a pulsing effect: fade between 0.25 and 1 opacity (never fully invisible)
+        const opacity = 0.25 + (Math.sin(this.invincibilityTime * Math.PI / 0.75) + 1) / 2 * 0.75;
+        (this.shipMesh.material as THREE.LineBasicMaterial).opacity = opacity;
+        (this.shipMesh.material as THREE.LineBasicMaterial).transparent = true;
+      } else {
+        // Ship is not invincible, restore full opacity
+        this.invincibilityTime = 0;
+        (this.shipMesh.material as THREE.LineBasicMaterial).opacity = 1;
+        (this.shipMesh.material as THREE.LineBasicMaterial).transparent = false;
+      }
+
       // Handle bounding box rendering
       const bbox = world.get<BoundingBox>(entity, BoundingBox);
-      const ship = world.get<ShipComponent>(entity, ShipComponent);
       const shouldShowBBox = bbox && ship && ship.boundingBoxEnabled;
       
       if (shouldShowBBox) {
@@ -85,6 +142,16 @@ export class ShipRenderSystem {
         this.bboxMesh.position.set(transform.position[0], transform.position[1], transform.position[2]);
         this.bboxMesh.rotation.z = transform.rotation[2];
         this.bboxMesh.scale.set(transform.scale[0], transform.scale[1], transform.scale[2]);
+
+        // Apply same invincibility fade to bbox
+        if (ship && ship.isInvincible) {
+          const opacity = 0.25 + (Math.sin(this.invincibilityTime * Math.PI / 0.75) + 1) / 2 * 0.75;
+          (this.bboxMesh.material as THREE.LineBasicMaterial).opacity = opacity;
+          (this.bboxMesh.material as THREE.LineBasicMaterial).transparent = true;
+        } else {
+          (this.bboxMesh.material as THREE.LineBasicMaterial).opacity = 1;
+          (this.bboxMesh.material as THREE.LineBasicMaterial).transparent = false;
+        }
       } else if (this.bboxMesh) {
         // Remove bounding box if it's no longer present or disabled
         const geom = (this.bboxMesh as any).geometry;

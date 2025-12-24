@@ -36,16 +36,21 @@ import { CollisionHandlingSystem } from "./systems/collision-handling-system.ts"
  * Note: Must be called after scene is loaded to connect systems to ship entity
  */
 export function installShipPlugin(world: World): ShipPluginContext {
-  // Create and register systems
+  // Create and register systems (except collision handling - order matters!)
   const playerInputSystem = new PlayerInputSystem();
   const shipMovementSystem = new ShipMovementSystem();
   const shipThrustVisualSystem = new ShipThrustVisualSystem();
   const collisionHandlingSystem = new CollisionHandlingSystem();
 
+  // Connect playerInputSystem to collision handler so it can clear input on collision
+  collisionHandlingSystem.setPlayerInputSystem(playerInputSystem);
+
+  // Add input, movement, and visual systems
   world.addSystem(playerInputSystem);
   world.addSystem(shipMovementSystem);
   world.addSystem(shipThrustVisualSystem);
-  world.addSystem(collisionHandlingSystem);
+  // Note: CollisionHandlingSystem is added later (after collision detection systems)
+  // to ensure it processes events emitted by AsteroidCollisionSystem and MissileCollisionSystem
 
   return {
     playerInputSystem,

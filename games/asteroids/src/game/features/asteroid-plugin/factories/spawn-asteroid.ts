@@ -28,6 +28,8 @@ export function spawnAsteroid(
   const velocityRange = config.velocityRange;
 
   // Random direction for velocity
+
+  // Random direction for velocity
   const angle = Math.random() * Math.PI * 2;
   const speed =
     velocityRange.min + Math.random() * (velocityRange.max - velocityRange.min);
@@ -55,13 +57,12 @@ export function spawnAsteroid(
   world.add(entity, new AngularVelocity(0, 0, angularVelocityZ));
 
   // Asteroid-specific component
-  world.add(entity, new AsteroidComponent({ sizeTier, rotationSpeed: 1 }));
+  world.add(entity, new AsteroidComponent({ sizeTier, rotationSpeed: 1, boundingSphereEnabled: false }));
 
   // Geometry for rendering
   const geometryProcessor = getAsteroidGeometryByTier(sizeTier);
   const processedPoints = geometryProcessor.getPoints();
   world.add(entity, new AsteroidGeometry(processedPoints));
-
   // Visual components
   world.add(entity, new BasicMaterial([0.8, 0.8, 0.8, 1.0])); // light gray
 

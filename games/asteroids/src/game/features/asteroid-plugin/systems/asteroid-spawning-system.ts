@@ -18,8 +18,15 @@ export class AsteroidSpawningSystem {
         sizeTier: AsteroidSizeTier;
       };
 
+      // Validate event data
+      if (!eventData.position || !eventData.sizeTier) {
+        continue;
+      }
+
+      const sizeTier = eventData.sizeTier as AsteroidSizeTier;
+
       // Spawn the asteroid at the requested position with the requested size
-      spawnAsteroid(world, eventData.position, eventData.sizeTier);
+      spawnAsteroid(world, eventData.position, sizeTier);
     }
   }
 }

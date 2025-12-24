@@ -12,9 +12,15 @@ import { AsteroidComponent, type AsteroidSizeTier } from "../components/asteroid
  */
 export class AsteroidDestructionSystem {
   private scoreCallback?: (points: number) => void;
+  private renderSystem?: any;
 
   setScoreCallback(callback: (points: number) => void): void {
     this.scoreCallback = callback;
+  }
+
+  // Set reference to render system so we can clean up bounding circles on destruction
+  setRenderSystem(renderSystem: any): void {
+    this.renderSystem = renderSystem;
   }
 
   update(world: World, _dt: number): void {
@@ -45,9 +51,10 @@ export class AsteroidDestructionSystem {
       this.scoreCallback(points);
     }
 
-    // Get next tier and spawn count
-    const nextTier = AsteroidComponent.getNextSizeTier(asteroidComponent.sizeTier);
-    const breakCount = AsteroidComponent.getBreakCount(asteroidComponent.sizeTier);
+    // Get next tier and spawn count - use the current component's sizeTier to ensure freshness
+    const currentSizeTier = asteroidComponent.sizeTier;
+    const nextTier = AsteroidComponent.getNextSizeTier(currentSizeTier);
+    const breakCount = AsteroidComponent.getBreakCount(currentSizeTier);
 
     // Spawn smaller asteroids if applicable
     if (nextTier !== null && breakCount > 0) {
@@ -62,6 +69,12 @@ export class AsteroidDestructionSystem {
           sizeTier: nextTier,
         });
       }
+    }
+
+    // Clear any visuals associated with this asteroid (mesh and bounding circle)
+    // This is important to prevent reusing circles from recycled entity IDs
+    if (this.renderSystem) {
+      this.renderSystem.clearEntityVisuals(asteroidId);
     }
 
     // Remove destroyed asteroid from world

@@ -18,7 +18,8 @@ export class AsteroidGeometryProcessor {
   private originalPoints: Array<{ x: number; y: number }>;
 
   constructor(vectors: Array<{ x: number; y: number }>) {
-    this.originalPoints = vectors;
+    // Create a copy of the input vectors to avoid sharing references with the shared constants
+    this.originalPoints = vectors.map(p => ({ ...p }));
   }
 
   /**

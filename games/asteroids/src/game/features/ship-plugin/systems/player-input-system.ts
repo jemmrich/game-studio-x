@@ -22,6 +22,10 @@ export class PlayerInputSystem {
     this.shipEntityId = id;
   }
 
+  clearInput(): void {
+    this.keysPressed.clear();
+  }
+
   update(world: World, _dt: number): void {
     if (!this.initialized) {
       this.setupKeyboardListeners();

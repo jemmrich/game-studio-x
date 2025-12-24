@@ -19,6 +19,45 @@ export class AsteroidRenderSystem {
     this.scene = scene;
   }
 
+  /**
+   * Clear bounding circle and mesh for an entity (called when asteroid is destroyed)
+   */
+  clearEntityVisuals(entityId: string): void {
+    // Clear bounding circle
+    const circle = this.boundingCircles.get(entityId);
+    if (circle) {
+      this.scene.remove(circle);
+      const geom = circle.geometry;
+      if (geom) geom.dispose();
+      const mat = circle.material;
+      if (mat) {
+        if (Array.isArray(mat)) {
+          for (const m of mat) m.dispose();
+        } else {
+          mat.dispose();
+        }
+      }
+      this.boundingCircles.delete(entityId);
+    }
+
+    // Clear mesh
+    const mesh = this.asteroidMeshes.get(entityId);
+    if (mesh) {
+      this.scene.remove(mesh);
+      const geom = mesh.geometry;
+      if (geom) geom.dispose();
+      const mat = mesh.material;
+      if (mat) {
+        if (Array.isArray(mat)) {
+          for (const m of mat) m.dispose();
+        } else {
+          mat.dispose();
+        }
+      }
+      this.asteroidMeshes.delete(entityId);
+    }
+  }
+
   update(world: World, _dt: number): void {
     // Query for entities with asteroid geometry
     const query = world.query(AsteroidGeometry, Transform, AsteroidComponent);
@@ -26,6 +65,7 @@ export class AsteroidRenderSystem {
 
     const renderedAsteroids = new Set<string>();
 
+    // Process queried entities
     for (const entity of entities) {
       const geometry = world.get<AsteroidGeometry>(entity, AsteroidGeometry);
       const transform = world.get<Transform>(entity, Transform);
@@ -37,48 +77,81 @@ export class AsteroidRenderSystem {
 
       renderedAsteroids.add(entity);
 
-      // Create or reuse asteroid mesh
-      let mesh = this.asteroidMeshes.get(entity);
-      if (!mesh) {
-        mesh = this.createAsteroidMesh(geometry);
-        this.asteroidMeshes.set(entity, mesh);
-        this.scene.add(mesh);
-      }
-
-      // Create or reuse bounding circle based on boundingSphereEnabled
-      let circle = this.boundingCircles.get(entity);
-      if (asteroid.boundingSphereEnabled) {
-        if (!circle) {
-          circle = this.createBoundingCircle(asteroid.sizeTier);
-          this.boundingCircles.set(entity, circle);
-          this.scene.add(circle);
-        }
-        // Update circle position only (collision radius is already in world space, don't scale it)
-        circle.position.set(transform.position[0], transform.position[1], transform.position[2]);
-      } else {
-        // Remove circle if bounding sphere is disabled
-        if (circle) {
-          this.scene.remove(circle);
-          const geom = circle.geometry;
-          if (geom) geom.dispose();
-          const mat = circle.material;
-          if (mat) {
-            if (Array.isArray(mat)) {
-              for (const m of mat) m.dispose();
-            } else {
-              mat.dispose();
-            }
-          }
-          this.boundingCircles.delete(entity);
-        }
-      }
-
-      // Update mesh position and rotation from transform
-      mesh.position.set(transform.position[0], transform.position[1], transform.position[2]);
-      mesh.rotation.set(transform.rotation[0], transform.rotation[1], transform.rotation[2]);
-      mesh.scale.set(transform.scale[0], transform.scale[1], transform.scale[2]);
+      this.renderAsteroid(world, entity, geometry, transform, asteroid);
     }
 
+    // Cleanup old meshes and circles for asteroids that no longer exist
+    this.cleanupRemovedAsteroids(renderedAsteroids);
+  }
+
+  private renderAsteroid(
+    world: World,
+    entity: string,
+    geometry: AsteroidGeometry,
+    transform: Transform,
+    asteroid: AsteroidComponent
+  ): void {
+    // Create or reuse asteroid mesh
+    let mesh = this.asteroidMeshes.get(entity);
+    if (!mesh) {
+      mesh = this.createAsteroidMesh(geometry);
+      this.asteroidMeshes.set(entity, mesh);
+      this.scene.add(mesh);
+
+      // When creating a new mesh (new entity), also clear any old bounding circle
+      // This prevents reusing circles from recycled entity IDs
+      const oldCircle = this.boundingCircles.get(entity);
+      if (oldCircle) {
+        this.scene.remove(oldCircle);
+        const geom = oldCircle.geometry;
+        if (geom) geom.dispose();
+        const mat = oldCircle.material;
+        if (mat) {
+          if (Array.isArray(mat)) {
+            for (const m of mat) m.dispose();
+          } else {
+            mat.dispose();
+          }
+        }
+        this.boundingCircles.delete(entity);
+      }
+    }
+
+    // Create or reuse bounding circle based on boundingSphereEnabled
+    let circle = this.boundingCircles.get(entity);
+    if (asteroid.boundingSphereEnabled) {
+      if (!circle) {
+        circle = this.createBoundingCircle(asteroid.sizeTier);
+        this.boundingCircles.set(entity, circle);
+        this.scene.add(circle);
+      }
+      // Update circle position only (collision radius is already in world space, don't scale it)
+      circle.position.set(transform.position[0], transform.position[1], transform.position[2]);
+    } else {
+      // Remove circle if bounding sphere is disabled
+      if (circle) {
+        this.scene.remove(circle);
+        const geom = circle.geometry;
+        if (geom) geom.dispose();
+        const mat = circle.material;
+        if (mat) {
+          if (Array.isArray(mat)) {
+            for (const m of mat) m.dispose();
+          } else {
+            mat.dispose();
+          }
+        }
+        this.boundingCircles.delete(entity);
+      }
+    }
+
+    // Update mesh position and rotation from transform
+    mesh.position.set(transform.position[0], transform.position[1], transform.position[2]);
+    mesh.rotation.set(transform.rotation[0], transform.rotation[1], transform.rotation[2]);
+    mesh.scale.set(transform.scale[0], transform.scale[1], transform.scale[2]);
+  }
+
+  private cleanupRemovedAsteroids(renderedAsteroids: Set<string>): void {
     // Remove meshes for asteroids that no longer exist
     for (const [entityId, mesh] of this.asteroidMeshes.entries()) {
       if (!renderedAsteroids.has(entityId)) {

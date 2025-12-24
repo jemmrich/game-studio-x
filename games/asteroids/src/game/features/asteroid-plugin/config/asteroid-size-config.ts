@@ -21,26 +21,26 @@ export interface AsteroidSizeConfig {
  * Collision radius is automatically derived: meshScale * worldScale
  * This ensures visual size and collision detection stay perfectly synchronized
  */
-export const ASTEROID_SIZE_CONFIG: Record<AsteroidSizeTier, AsteroidSizeConfig> = {
-  3: {
+export const ASTEROID_SIZE_CONFIG = Object.freeze({
+  3: Object.freeze({
     meshScale: 1.0,
-    velocityRange: { min: 10, max: 10 },
+    velocityRange: Object.freeze({ min: 10, max: 10 }),
     worldScale: 7.5,
     spawnCount: 2,
-  },
-  2: {
+  }),
+  2: Object.freeze({
     meshScale: 0.6,
-    velocityRange: { min: 12, max: 12 },
+    velocityRange: Object.freeze({ min: 12, max: 12 }),
     worldScale: 7.5,
     spawnCount: 2,
-  },
-  1: {
+  }),
+  1: Object.freeze({
     meshScale: 0.3,
-    velocityRange: { min: 18, max: 18 },
+    velocityRange: Object.freeze({ min: 18, max: 18 }),
     worldScale: 7,
     spawnCount: 0,
-  },
-};
+  }),
+} as const) as Record<AsteroidSizeTier, AsteroidSizeConfig>;
 
 /**
  * Helper function to get collision radius for a size tier

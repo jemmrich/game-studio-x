@@ -1,7 +1,10 @@
 import type { World } from "@engine/core/world.ts";
 import type { GUID } from "@engine/utils/guid.ts";
+import type { PlayerInputSystem } from "./player-input-system.ts";
 import { ShipComponent } from "../components/ship.ts";
+import { Velocity } from "../components/velocity.ts";
 import { Transform } from "@engine/features/transform-plugin/mod.ts";
+import { Visible } from "@engine/features/render-plugin/mod.ts";
 
 /**
  * CollisionHandlingSystem
@@ -10,12 +13,20 @@ import { Transform } from "@engine/features/transform-plugin/mod.ts";
  */
 export class CollisionHandlingSystem {
   private shipEntityId: GUID | null = null;
+  private world: World | null = null;
+  private playerInputSystem: PlayerInputSystem | null = null;
 
   setShipEntityId(id: GUID): void {
     this.shipEntityId = id;
   }
 
+  setPlayerInputSystem(system: PlayerInputSystem): void {
+    this.playerInputSystem = system;
+  }
+
   update(world: World, _dt: number): void {
+    this.world = world;
+
     if (this.shipEntityId === null || !world.entityExists(this.shipEntityId)) {
       return;
     }
@@ -29,43 +40,73 @@ export class CollisionHandlingSystem {
     // Check for collision events
     const collisions = world.getEvents("ship_asteroid_collision");
     for (const collision of collisions) {
-      this.handleCollision(world, shipComponent);
+      const data = collision.data as unknown;
+      if (data && typeof data === "object" && "asteroidId" in data && "shipId" in data) {
+        this.handleCollision(world, shipComponent, data as { shipId: GUID; asteroidId: GUID });
+      }
     }
   }
 
   private handleCollision(
     world: World,
     shipComponent: ShipComponent,
+    collision: { shipId: GUID; asteroidId: GUID },
   ): void {
     if (this.shipEntityId === null) return;
+
+    // Ignore collision if ship is invincible
+    if (shipComponent.isInvincible) {
+      return;
+    }
+
+    // Set invincibility immediately to prevent secondary collisions in the same frame
+    // (e.g., if ship hits a big asteroid that spawns smaller ones)
+    shipComponent.isInvincible = true;
+
+    const { asteroidId } = collision;
+
+    // Destroy the asteroid that we collided with
+    if (world.entityExists(asteroidId)) {
+      const asteroidTransform = world.get<Transform>(asteroidId, Transform);
+      const position = asteroidTransform
+        ? (asteroidTransform.position as [number, number, number])
+        : [0, 0, 0];
+
+      // Emit destruction event to handle asteroid break-up
+      world.emitEvent("asteroid_destroyed", { asteroidId, position });
+    }
 
     // Decrement lives
     shipComponent.lives -= 1;
 
     if (shipComponent.lives > 0) {
-      // Respawn at center
-      const transform = world.get<Transform>(this.shipEntityId, Transform);
-      if (transform) {
-        // Get canvas dimensions from render context
-        const renderContext = world.getResource("render_context") as
-          | { width: number; height: number }
-          | undefined;
+      // Disable input and movement while waiting for respawn
+      shipComponent.isThrusting = false;
+      shipComponent.rotationDirection = 0;
 
-        if (renderContext) {
-          transform.position[0] = renderContext.width / 2;
-          transform.position[1] = renderContext.height / 2;
-          transform.rotation[2] = 0; // Reset rotation on respawn
-        }
+      // Clear any buffered keyboard input to prevent movement on respawn
+      if (this.playerInputSystem) {
+        this.playerInputSystem.clearInput();
       }
 
-      // Make invincible for a moment
-      shipComponent.isInvincible = true;
+      // Stop the ship immediately by clearing velocity
+      const velocity = world.get<Velocity>(this.shipEntityId, Velocity);
+      if (velocity) {
+        velocity.x = 0;
+        velocity.y = 0;
+        velocity.z = 0;
+      }
 
-      // Emit respawn event
-      world.emitEvent("ship_respawned", {
-        lives: shipComponent.lives,
-        position: transform?.position ?? [0, 0, 0],
-      });
+      // Make the ship invisible
+      const visible = world.get<Visible>(this.shipEntityId, Visible);
+      if (visible) {
+        visible.enabled = false;
+      }
+
+      // Schedule respawn after 1 second
+      setTimeout(() => {
+        this.respawnShipAfterCooldown(world);
+      }, 3000);
     } else {
       // Game over
       world.emitEvent("game_over", {
@@ -73,9 +114,55 @@ export class CollisionHandlingSystem {
         finalLives: shipComponent.lives,
       });
 
-      // Optionally destroy the ship entity
-      world.destroyEntity(this.shipEntityId);
+      console.log("Game Over!");
+
+      // Make the ship invisible
+      const visible = world.get<Visible>(this.shipEntityId, Visible);
+      if (visible) {
+        visible.enabled = false;
+      }
+
       this.shipEntityId = null;
     }
+  }
+
+  private respawnShip(world: World): void {
+    if (this.shipEntityId === null) return;
+
+    // Make the ship visible again
+    const visible = world.get<Visible>(this.shipEntityId, Visible);
+    if (visible) {
+      visible.enabled = true;
+    }
+
+    // Reset ship to center
+    const transform = world.get<Transform>(this.shipEntityId, Transform);
+    if (transform) {
+      transform.position = [0, 0, 0];
+      transform.rotation = [0, 0, 0];
+    }
+
+    // Set invincibility
+    const shipComponent = world.get<ShipComponent>(
+      this.shipEntityId,
+      ShipComponent,
+    );
+    if (shipComponent) {
+      shipComponent.isInvincible = true;
+    }
+
+    // Emit respawn event
+    world.emitEvent("ship_respawned", {
+      lives: shipComponent?.lives ?? 0,
+      position: [0, 0, 0] as [number, number, number],
+    });
+  }
+
+  private respawnShipAfterCooldown(world: World): void {
+    if (this.shipEntityId === null || !world.entityExists(this.shipEntityId)) {
+      return;
+    }
+
+    this.respawnShip(world);
   }
 }

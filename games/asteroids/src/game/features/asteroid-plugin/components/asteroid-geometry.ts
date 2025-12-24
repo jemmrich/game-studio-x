@@ -6,7 +6,8 @@ export class AsteroidGeometry {
   points: Array<{ x: number; y: number }> = [];
 
   constructor(points: Array<{ x: number; y: number }> = []) {
-    this.points = points;
+    // Create a copy to avoid sharing references with other entities
+    this.points = points.map(p => ({ ...p }));
   }
 
   getPoints(): Array<{ x: number; y: number }> {

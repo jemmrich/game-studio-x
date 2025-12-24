@@ -37,6 +37,7 @@ export class AsteroidComponent {
 
   /**
    * Get velocity range for asteroid size tier
+   * TODO: James you need to review this
    */
   static getVelocityRange(sizeTier: AsteroidSizeTier): { min: number; max: number } {
     switch (sizeTier) {
@@ -51,6 +52,7 @@ export class AsteroidComponent {
 
   /**
    * Get collision radius for asteroid size tier
+   * TODO: You need to review this, why are these hardcoded when we have bounding spheres?
    */
   static getCollisionRadius(sizeTier: AsteroidSizeTier): number {
     switch (sizeTier) {

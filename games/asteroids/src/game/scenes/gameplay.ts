@@ -25,7 +25,7 @@ export class GameplayScene extends BaseScene {
   }
 
   init(world: World): void {
-    // Install the ship plugin (sets up all ship-related systems)
+    // Install the ship plugin (sets up ship control and movement systems)
     this.shipPluginContext = installShipPlugin(world);
 
     // Spawn the player ship
@@ -38,7 +38,18 @@ export class GameplayScene extends BaseScene {
     installMissilePlugin(world);
 
     // Install the asteroid plugin (sets up asteroid systems)
-    installAsteroidPlugin(world);
+    const { destructionSystem: asteroidDestructionSystem, spawningSystem: asteroidSpawningSystem } = installAsteroidPlugin(world);
+
+    // Add collision handling LAST, so it processes events from detection systems
+    world.addSystem(this.shipPluginContext.collisionHandlingSystem);
+
+    // Add asteroid destruction system AFTER collision handling
+    // This ensures destruction events from collisions are processed in the same frame
+    world.addSystem(asteroidDestructionSystem);
+
+    // Add asteroid spawning system AFTER destruction system
+    // This ensures spawn events from destruction are processed in the same frame
+    world.addSystem(asteroidSpawningSystem);
 
     // Spawn initial asteroids for testing (mix of sizes)
     // Game world bounds are approximately X[-130, 130] Y[-57, 57], leave margin for safe spawn
@@ -83,5 +94,8 @@ export class GameplayScene extends BaseScene {
 
     const asteroidRenderSystem = new AsteroidRenderSystem(this.threeJsScene);
     world.addSystem(asteroidRenderSystem);
+
+    // Connect destruction system to render system so it can clean up visuals
+    asteroidDestructionSystem.setRenderSystem(asteroidRenderSystem);
   }
 }
