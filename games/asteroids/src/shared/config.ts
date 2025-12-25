@@ -10,7 +10,7 @@
  */
 export const DIFFICULTY_CONFIG = Object.freeze({
   /** Enable difficulty multiplier scaling across waves */
-  useDifficultyMultiplier: false,
+  useDifficultyMultiplier: true,
   
   /** Base difficulty multiplier (wave 1) */
   baseDifficultyMultiplier: 1.0,

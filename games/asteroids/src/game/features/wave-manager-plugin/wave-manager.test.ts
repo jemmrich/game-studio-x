@@ -9,7 +9,7 @@ import {
 import { WaveTransitionSystem } from "./systems/wave-transition-system.ts";
 import { AsteroidComponent } from "../asteroid-plugin/components/asteroid.ts";
 import { AlienComponent } from "../alien-plugin/components/alien.ts";
-import { calculateDifficultyMultiplier } from "../../shared/config.ts";
+import { calculateDifficultyMultiplier } from "../../../shared/config.ts";
 
 // Force TypeScript to recognize imports even if they seem unused
 

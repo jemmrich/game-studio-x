@@ -3,8 +3,8 @@
  * Tracks wave state, entity counts, and progression through waves
  */
 export interface WaveManagerOptions {
-  initialWave?: number;
-  useDifficultyScaling?: boolean;
+  startingWaveNumber?: number;
+  startingDifficultyMultiplier?: number;
 }
 
 export class WaveManager {
@@ -35,14 +35,22 @@ export class WaveManager {
   lastEventEmitted: string = "";
 
   constructor(options?: WaveManagerOptions) {
-    const { initialWave = 1, useDifficultyScaling = true } = options || {};
-    this.currentWaveNumber = initialWave;
+    const {
+      startingWaveNumber = 1,
+      startingDifficultyMultiplier = 1.0,
+    } = options || {};
+    
+    this.currentWaveNumber = startingWaveNumber;
+    this.totalWavesCompleted = startingWaveNumber - 1;
+    this.difficultyMultiplier = startingDifficultyMultiplier;
   }
 
   /**
    * Reset counters and flags for a new wave
    */
   resetForNewWave(currentTime: number): void {
+    this.asteroidCount = 0;
+    this.alienCount = 0;
     this.asteroidsDestroyedThisWave = 0;
     this.aliensDestroyedThisWave = 0;
     this.isAsteroidsCleared = false;
