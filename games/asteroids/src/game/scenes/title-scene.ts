@@ -1,10 +1,15 @@
 import { BaseScene } from "@engine/core/base-scene.ts";
 import type { World } from "@engine/core/world.ts";
+import type { GUID } from "@engine/utils/guid.ts";
+import { SceneManager } from "@engine/resources/scene-manager.ts";
 import { spawnAsteroid, AsteroidRenderSystem, installAsteroidPlugin } from "../features/asteroid-plugin/mod.ts";
+import { GameplayScene } from "./gameplay.ts";
 import * as THREE from "three";
 
 export class TitleScene extends BaseScene {
   private threeJsScene: THREE.Scene;
+  private keyListenerAdded = false;
+  private asteroidEntityIds: GUID[] = [];
 
   constructor(threeJsScene: THREE.Scene) {
     super("asteroids-title");
@@ -72,7 +77,8 @@ export class TitleScene extends BaseScene {
         size = 1; // Small
       }
       
-      spawnAsteroid(world, position, size);
+      const asteroidId = spawnAsteroid(world, position, size);
+      this.asteroidEntityIds.push(asteroidId);
     }
 
     // Create and register Three.js rendering system
@@ -81,5 +87,35 @@ export class TitleScene extends BaseScene {
 
     // Connect destruction system to render system so it can clean up visuals
     asteroidDestructionSystem.setRenderSystem(asteroidRenderSystem);
+
+    // Set up keyboard listener to switch to gameplay on any key press
+    if (!this.keyListenerAdded) {
+      this.setupKeyboardListener(world);
+      this.keyListenerAdded = true;
+    }
+  }
+
+  private setupKeyboardListener(world: World): void {
+    const handleKeyPress = () => {
+      // Emit event for React to update UI
+      world.emitEvent("scene-transition", { view: "gameplay" });
+
+      const sceneManager = world.getResource<SceneManager>("sceneManager");
+      if (sceneManager) {
+        sceneManager.loadScene(new GameplayScene(this.threeJsScene));
+      }
+      // Remove listener after first key press
+      globalThis.removeEventListener("keydown", handleKeyPress);
+    };
+
+    globalThis.addEventListener("keydown", handleKeyPress);
+  }
+
+  dispose(world: World): void {
+    // Remove all spawned asteroids from the scene
+    for (const asteroidId of this.asteroidEntityIds) {
+      world.destroyEntity(asteroidId);
+    }
+    this.asteroidEntityIds = [];
   }
 }

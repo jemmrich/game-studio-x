@@ -1,8 +1,7 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import "./ui/index.css";
-import {Hud} from "./ui/components/hud/Hud.tsx";
-import { Title } from "./ui/components/title/Title.tsx";
+import { GameUI } from "./ui/components/game-ui/GameUI.tsx";
 
 import { Time, World, SceneManager, SceneLifecycleSystem } from "@engine/mod.ts";
 import {
@@ -11,7 +10,6 @@ import {
 import {
   installRenderPlugin,
 } from "@engine/features/render-plugin/mod.ts";
-import { GameplayScene } from "./game/scenes/gameplay.ts";
 import { TitleScene } from "./game/scenes/title-scene.ts";
 import { RendererSystem } from "./game/systems/renderer-system.ts";
 import { RenderContext } from "./game/resources/render-context.ts";
@@ -19,15 +17,15 @@ import { PauseState } from "./game/resources/pause-state.ts";
 import { PauseSystem } from "./game/systems/pause-system.ts";
 import * as THREE from "three";
 
-createRoot(document.getElementById("ui")!).render(
-  <StrictMode>
-    <Title />
-    {/* <Hud /> */}
-  </StrictMode>,
-);
-
 function main() {
   const world = new World();
+
+  // Render React UI with world reference
+  createRoot(document.getElementById("ui")!).render(
+    <StrictMode>
+      <GameUI world={world} />
+    </StrictMode>,
+  );
 
   // Time resource
   const time = new Time();
@@ -67,8 +65,7 @@ function main() {
   // Register Three.js renderer system
   world.addSystem(new RendererSystem(threeScene, canvas));
 
-  // Load GameplayScene with Three.js rendering
-  // const currentScene = new GameplayScene(threeScene);
+  // Load initial scene
   const currentScene = new TitleScene(threeScene);
   sceneManager.loadScene(currentScene);
 
