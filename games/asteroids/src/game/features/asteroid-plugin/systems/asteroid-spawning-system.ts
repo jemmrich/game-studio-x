@@ -20,6 +20,7 @@ export class AsteroidSpawningSystem {
 
       // Validate event data
       if (!eventData.position || !eventData.sizeTier) {
+        console.warn(`[SPAWNING SYSTEM] Invalid spawn event data:`, eventData);
         continue;
       }
 

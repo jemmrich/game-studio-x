@@ -94,27 +94,42 @@ export class AsteroidRenderSystem {
     // Create or reuse asteroid mesh
     let mesh = this.asteroidMeshes.get(entity);
     if (!mesh) {
+      // When creating a new mesh (new entity), ensure no stale visuals exist
+      // This is critical for recycled entity IDs
+      
+      // Search the scene for any meshes that might have userData matching this entity
+      // (in case they weren't properly cleaned up due to entity ID recycling)
+      const staleObjects: THREE.Object3D[] = [];
+      this.scene.traverse((obj) => {
+        if (obj.userData && obj.userData.entityId === entity) {
+          staleObjects.push(obj);
+        }
+      });
+      
+      // Silently clean up any stale objects (this is normal during entity ID recycling)
+      if (staleObjects.length > 0) {
+        staleObjects.forEach(obj => {
+          this.scene.remove(obj);
+          if (obj instanceof THREE.Line || obj instanceof THREE.LineLoop) {
+            const geom = obj.geometry;
+            if (geom) geom.dispose();
+            const mat = obj.material;
+            if (mat) {
+              if (Array.isArray(mat)) {
+                for (const m of mat) m.dispose();
+              } else {
+                mat.dispose();
+              }
+            }
+          }
+        });
+      }
+
+      // Now create the new mesh
       mesh = this.createAsteroidMesh(geometry);
+      mesh.userData.entityId = entity; // Tag with entity ID for debugging
       this.asteroidMeshes.set(entity, mesh);
       this.scene.add(mesh);
-
-      // When creating a new mesh (new entity), also clear any old bounding circle
-      // This prevents reusing circles from recycled entity IDs
-      const oldCircle = this.boundingCircles.get(entity);
-      if (oldCircle) {
-        this.scene.remove(oldCircle);
-        const geom = oldCircle.geometry;
-        if (geom) geom.dispose();
-        const mat = oldCircle.material;
-        if (mat) {
-          if (Array.isArray(mat)) {
-            for (const m of mat) m.dispose();
-          } else {
-            mat.dispose();
-          }
-        }
-        this.boundingCircles.delete(entity);
-      }
     }
 
     // Create or reuse bounding circle based on boundingSphereEnabled

@@ -3,6 +3,7 @@ import type { GUID } from "@engine/utils/guid.ts";
 import { ShipComponent } from "../components/ship.ts";
 import { Velocity } from "../components/velocity.ts";
 import { Transform } from "@engine/features/transform-plugin/mod.ts";
+import { Visible } from "@engine/features/render-plugin/mod.ts";
 
 /**
  * PlayerInputSystem
@@ -41,6 +42,15 @@ export class PlayerInputSystem {
       ShipComponent,
     );
     if (!shipComponent) return;
+
+    // Prevent input if ship is not visible (dead/respawning)
+    const visible = world.get<Visible>(this.shipEntityId, Visible);
+    if (!visible || !visible.enabled) {
+      // Clear any active input states
+      shipComponent.rotationDirection = 0;
+      shipComponent.isThrusting = false;
+      return;
+    }
 
     // Handle rotation input
     shipComponent.rotationDirection = 0;

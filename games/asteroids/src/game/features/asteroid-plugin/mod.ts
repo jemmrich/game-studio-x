@@ -13,24 +13,60 @@ import { AsteroidCollisionSystem } from "./systems/asteroid-collision-system.ts"
 import { AsteroidDestructionSystem } from "./systems/asteroid-destruction-system.ts";
 import { AsteroidSpawningSystem } from "./systems/asteroid-spawning-system.ts";
 
+// Track whether the asteroid plugin has been installed to prevent duplicate systems
+let asteroidPluginInstalled = false;
+// Store references to systems for reuse on subsequent installs
+let cachedSystems: {
+  movementSystem: AsteroidMovementSystem;
+  collisionSystem: AsteroidCollisionSystem;
+  destructionSystem: AsteroidDestructionSystem;
+  spawningSystem: AsteroidSpawningSystem;
+} | null = null;
+
 /**
  * Install the Asteroid Plugin
  * Sets up all systems needed for asteroid movement, collision, and destruction
+ * 
+ * NOTE: The plugin is designed to be installed once globally on the World, not per-scene.
+ * Subsequent calls will return the existing systems without adding duplicates.
+ * 
+ * The reason for this design:
+ * - TitleScene needs the movement and collision systems to animate asteroids
+ * - GameplayScene needs the same systems plus destruction and spawning for gameplay
+ * - Since World is shared across scenes, we only install once to avoid duplicate systems
+ * - Scene cleanup via dispose() removes scene-specific entities (title asteroids) without affecting game systems
  */
 export function installAsteroidPlugin(world: World): {
+  movementSystem: AsteroidMovementSystem;
+  collisionSystem: AsteroidCollisionSystem;
   destructionSystem: AsteroidDestructionSystem;
   spawningSystem: AsteroidSpawningSystem;
 } {
+  // If already installed, return the cached systems without creating duplicates
+  if (asteroidPluginInstalled && cachedSystems) {
+    return cachedSystems;
+  }
+
   const asteroidMovementSystem = new AsteroidMovementSystem();
   const asteroidCollisionSystem = new AsteroidCollisionSystem();
   const asteroidDestructionSystem = new AsteroidDestructionSystem();
   const asteroidSpawningSystem = new AsteroidSpawningSystem();
 
+  // Add movement system early
   world.addSystem(asteroidMovementSystem);
-  world.addSystem(asteroidCollisionSystem);
+  // NOTE: AsteroidCollisionSystem will be added later by scenes in the correct order
+  // to ensure it runs AFTER MissileCollisionSystem
   // AsteroidDestructionSystem and AsteroidSpawningSystem are NOT added here
   // They will be added after CollisionHandlingSystem in the correct order
 
-  // Return both systems so they can be added in the correct order in gameplay scene
-  return { destructionSystem: asteroidDestructionSystem, spawningSystem: asteroidSpawningSystem };
+  asteroidPluginInstalled = true;
+  cachedSystems = {
+    movementSystem: asteroidMovementSystem,
+    collisionSystem: asteroidCollisionSystem,
+    destructionSystem: asteroidDestructionSystem,
+    spawningSystem: asteroidSpawningSystem,
+  };
+
+  // Return all systems so they can be added in the correct order in gameplay scene
+  return cachedSystems;
 }

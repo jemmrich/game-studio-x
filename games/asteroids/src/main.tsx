@@ -15,6 +15,10 @@ import { RendererSystem } from "./game/systems/renderer-system.ts";
 import { RenderContext } from "./game/resources/render-context.ts";
 import { PauseState } from "./game/resources/pause-state.ts";
 import { PauseSystem } from "./game/systems/pause-system.ts";
+import { installShipPlugin, ShipRenderSystem } from "./game/features/ship-plugin/mod.ts";
+import { installMissilePlugin, MissileRenderSystem } from "./game/features/missile-plugin/mod.ts";
+import { installAsteroidPlugin, AsteroidRenderSystem } from "./game/features/asteroid-plugin/mod.ts";
+import { installWaveManagerPlugin } from "./game/features/wave-manager-plugin/mod.ts";
 import * as THREE from "three";
 
 function main() {
@@ -62,8 +66,73 @@ function main() {
   const threeScene = new THREE.Scene();
   threeScene.background = new THREE.Color(0x000000); // Black background
 
+  // Store threeScene in world resources so scenes can access it
+  world.addResource("threeScene", threeScene);
+
   // Register Three.js renderer system
   world.addSystem(new RendererSystem(threeScene, canvas));
+
+  // ═══════════════════════════════════════════════════════════════════
+  // Install all game plugins once globally (not per-scene)
+  // ═══════════════════════════════════════════════════════════════════
+  // IMPORTANT: System execution order matters! Systems run in the order they're added.
+  // The current order ensures:
+  // 1. Collision DETECTION systems run first (emit collision events)
+  // 2. Collision HANDLING systems process events (emit destruction events)
+  // 3. Destruction systems process destruction (emit spawn events, cleanup visuals)
+  // 4. Spawning systems create new entities
+  // 5. Render systems update visuals (MUST run after destruction cleanup)
+  //
+  // DO NOT REORDER without understanding the event flow!
+  // ═══════════════════════════════════════════════════════════════════
+  
+  // Wave manager plugin
+  installWaveManagerPlugin(world);
+
+  // Ship plugin
+  const shipPluginContext = installShipPlugin(world);
+  world.addResource("shipPluginContext", shipPluginContext);
+
+  // Missile plugin
+  installMissilePlugin(world);
+
+  // Asteroid plugin - returns all systems so we can add them in the correct order
+  const { 
+    collisionSystem: asteroidCollisionSystem,
+    destructionSystem: asteroidDestructionSystem, 
+    spawningSystem: asteroidSpawningSystem 
+  } = installAsteroidPlugin(world);
+
+  // Add asteroid collision system
+  world.addSystem(asteroidCollisionSystem);
+
+  // Add ship collision handling
+  world.addSystem(shipPluginContext.collisionHandlingSystem);
+
+  // Add asteroid destruction system
+  world.addSystem(asteroidDestructionSystem);
+
+  // Add asteroid spawning system
+  world.addSystem(asteroidSpawningSystem);
+
+  // ═══════════════════════════════════════════════════════════════════
+  // Setup rendering systems
+  // ═══════════════════════════════════════════════════════════════════
+  const shipRenderSystem = new ShipRenderSystem(threeScene);
+  world.addSystem(shipRenderSystem);
+
+  const missileRenderSystem = new MissileRenderSystem(threeScene);
+  world.addSystem(missileRenderSystem);
+
+  const asteroidRenderSystem = new AsteroidRenderSystem(threeScene);
+  world.addSystem(asteroidRenderSystem);
+
+  // Connect destruction system to render system
+  asteroidDestructionSystem.setRenderSystem(asteroidRenderSystem);
+
+  // Store resources for scenes to use
+  world.addResource("asteroidRenderSystem", asteroidRenderSystem);
+  world.addResource("asteroidDestructionSystem", asteroidDestructionSystem);
 
   // Load initial scene
   const currentScene = new TitleScene(threeScene);

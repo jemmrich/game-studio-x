@@ -2,7 +2,8 @@ import { BaseScene } from "@engine/core/base-scene.ts";
 import type { World } from "@engine/core/world.ts";
 import type { GUID } from "@engine/utils/guid.ts";
 import { SceneManager } from "@engine/resources/scene-manager.ts";
-import { spawnAsteroid, AsteroidRenderSystem, installAsteroidPlugin } from "../features/asteroid-plugin/mod.ts";
+import { Tag } from "@engine/components/tag.ts";
+import { spawnAsteroid, AsteroidRenderSystem } from "../features/asteroid-plugin/mod.ts";
 import { GameplayScene } from "./gameplay.ts";
 import * as THREE from "three";
 
@@ -17,16 +18,10 @@ export class TitleScene extends BaseScene {
   }
 
   init(world: World): void {
-    // Install the asteroid plugin (sets up asteroid systems)
-    const { destructionSystem: asteroidDestructionSystem, spawningSystem: asteroidSpawningSystem } = installAsteroidPlugin(world);
+    // NOTE: All plugins are already installed in main.tsx
+    // This scene just spawns asteroids for visual effect
 
-    // Add asteroid destruction system
-    world.addSystem(asteroidDestructionSystem);
-
-    // Add asteroid spawning system
-    world.addSystem(asteroidSpawningSystem);
-
-    // Spawn 30 asteroids of mixed sizes across the screen
+    // Spawn 30 asteroids of mixed sizes across the screen for visual effect
     // Game world bounds are approximately X[-130, 130] Y[-57, 57]
     const spawnPositions: Array<[number, number, number]> = [
       // Large asteroids (size 3) - 10 total
@@ -78,15 +73,16 @@ export class TitleScene extends BaseScene {
       }
       
       const asteroidId = spawnAsteroid(world, position, size);
+      // Tag asteroid with scene ID for automatic cleanup on scene transition
+      world.add(asteroidId, new Tag(this.id));
       this.asteroidEntityIds.push(asteroidId);
     }
 
-    // Create and register Three.js rendering system
+    // Create and register Three.js rendering system for asteroids
     const asteroidRenderSystem = new AsteroidRenderSystem(this.threeJsScene);
     world.addSystem(asteroidRenderSystem);
 
-    // Connect destruction system to render system so it can clean up visuals
-    asteroidDestructionSystem.setRenderSystem(asteroidRenderSystem);
+    // Note: Title scene doesn't need destruction system - it just displays animated asteroids
 
     // Set up keyboard listener to switch to gameplay on any key press
     if (!this.keyListenerAdded) {
@@ -113,9 +109,13 @@ export class TitleScene extends BaseScene {
 
   dispose(world: World): void {
     // Remove all spawned asteroids from the scene
+    console.log(`[TitleScene] Disposing - cleaning up ${this.asteroidEntityIds.length} asteroids`);
     for (const asteroidId of this.asteroidEntityIds) {
-      world.destroyEntity(asteroidId);
+      if (world.entityExists(asteroidId)) {
+        world.destroyEntity(asteroidId);
+      }
     }
     this.asteroidEntityIds = [];
+    console.log(`[TitleScene] Dispose complete`);
   }
 }

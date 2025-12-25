@@ -105,13 +105,17 @@ export class ShipRenderSystem {
         this.invincibilityTime += dt;
         // Create a pulsing effect: fade between 0.25 and 1 opacity (never fully invisible)
         const opacity = 0.25 + (Math.sin(this.invincibilityTime * Math.PI / 0.75) + 1) / 2 * 0.75;
-        (this.shipMesh.material as THREE.LineBasicMaterial).opacity = opacity;
-        (this.shipMesh.material as THREE.LineBasicMaterial).transparent = true;
+        const mat = this.shipMesh.material as THREE.LineBasicMaterial;
+        mat.opacity = opacity;
+        mat.transparent = true;
+        mat.needsUpdate = true;
       } else {
         // Ship is not invincible, restore full opacity
         this.invincibilityTime = 0;
-        (this.shipMesh.material as THREE.LineBasicMaterial).opacity = 1;
-        (this.shipMesh.material as THREE.LineBasicMaterial).transparent = false;
+        const mat = this.shipMesh.material as THREE.LineBasicMaterial;
+        mat.opacity = 1;
+        mat.transparent = false;
+        mat.needsUpdate = true;
       }
 
       // Handle bounding box rendering
@@ -185,10 +189,12 @@ export class ShipRenderSystem {
 
     const bufferGeom = new THREE.BufferGeometry().setFromPoints(points);
 
-    // White line material
+    // White line material with transparency support for invincibility pulsing
     const material = new THREE.LineBasicMaterial({
       color: 0xffffff,
       linewidth: 2,
+      transparent: true,
+      opacity: 1.0,
     });
 
     return new THREE.Line(bufferGeom, material);

@@ -41,28 +41,33 @@ A centralized system that tracks the count of active asteroids and aliens, detec
 ## Development Phases & Checklist
 
 ### Phase 1 — Discovery
-- [ ] Requirements confirmed
-- [ ] Technical feasibility reviewed
-- [ ] Dependencies identified (entity lifecycle monitoring, event system)
+- [x] Requirements confirmed
+- [x] Technical feasibility reviewed
+- [x] Dependencies identified (entity lifecycle monitoring, event system)
+- **Status**: ✅ COMPLETE — See [Phase 1 Discovery Document](./2025-12-25-wave-manager-phase-1-discovery.md)
 
 ### Phase 2 — Design
-- [ ] Resource data structures defined
-- [ ] System behavior documented
-- [ ] Event schema finalized
-- [ ] Integration points with spawn systems identified
+- [x] Resource data structures defined
+- [x] System behavior documented
+- [x] Event schema finalized
+- [x] Integration points with spawn systems identified
+- **Status**: ✅ COMPLETE — See [Phase 2 Design Document](./2025-12-25-wave-manager-phase-2-design.md)
 
 ### Phase 3 — Implementation
-- [ ] WaveManager resource created
-- [ ] WaveTrackingSystem created to monitor entity counts
-- [ ] Wave completion detection implemented
-- [ ] Wave transition system created
-- [ ] Difficulty scaling parameters defined
+- [x] WaveManager resource created
+- [x] WaveTrackingSystem created to monitor entity counts
+- [x] Wave completion detection implemented
+- [x] Wave transition system created
+- [x] Difficulty scaling parameters defined
+- [x] Configuration file for difficulty management created
+- [x] AlienComponent created for entity filtering
+- [x] Comprehensive unit tests written
+- **Status**: ✅ COMPLETE
 
 ### Phase 4 — Integration & Testing
 - [ ] Unit tests for wave state tracking
 - [ ] Integration tests with spawn systems
 - [ ] Manual testing of wave transitions
-- [ ] Difficulty progression verification
 
 ### Phase 5 — Polish & Iteration
 - [ ] Wave transition effects (Entering Zone X message)
@@ -103,6 +108,7 @@ Handles progression to the next wave:
 - Increment currentWaveNumber
 - Calculate difficulty multiplier: `1.0 + (waveNumber - 1) * 0.15`
 - Store difficulty multiplier as wave state
+- Make useDifficultyMultiplier configurable via `@shared/config.ts` file so we can have normal mode vs difficulty mode
 - Emit "wave_transition" event with new wave number and difficulty
 - Scene manager transitions to "entering_zone" effect before spawning next wave
 
