@@ -1,3 +1,21 @@
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
 .enteringZoneContainer {
   display: flex;
   justify-content: center;
@@ -5,6 +23,11 @@
   width: 100%;
   height: 100%;
   text-align: center;
+  animation: fadeIn 0.8s ease-in-out;
+}
+
+.enteringZoneContainer.fade-out {
+  animation: fadeOut 0.8s ease-in-out forwards;
 }
 
 .enteringZoneText {

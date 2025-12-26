@@ -62,7 +62,7 @@ export class PlayerInputSystem {
       this.keysPressed.has("A")
     ) {
       shipComponent.rotationDirection = 1;
-      shipComponent.isInvincible = false; // Clear invincibility on input
+      // Rotation alone does NOT clear invincibility
     }
     if (
       this.keysPressed.has("ArrowRight") ||
@@ -70,7 +70,7 @@ export class PlayerInputSystem {
       this.keysPressed.has("D")
     ) {
       shipComponent.rotationDirection = -1;
-      shipComponent.isInvincible = false; // Clear invincibility on input
+      // Rotation alone does NOT clear invincibility
     }
 
     // Handle thrust input

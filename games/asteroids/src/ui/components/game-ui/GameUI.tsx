@@ -14,15 +14,16 @@ export function GameUI({ world }: GameUIProps) {
   useEffect(() => {
     // Listen for scene transitions
     world.onEvent("scene-transition", (event) => {
+      console.warn(`[GameUI] Scene transition to view: ${event.data.view}`);
       setCurrentView(event.data.view);
     });
 
     world.onEvent("entering_zone", () => {
-      // setCurrentView("enteringZone");
+      setCurrentView("enteringZone");
     });
 
     world.onEvent("entering_zone_effect_complete", () => {
-      // setCurrentView("gameplay");
+      setCurrentView("gameplay");
     });
   }, [world]);
 

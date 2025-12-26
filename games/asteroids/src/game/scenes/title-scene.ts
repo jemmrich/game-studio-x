@@ -22,6 +22,8 @@ export class TitleScene extends BaseScene {
     // NOTE: All plugins are already installed in main.tsx
     // This scene just spawns asteroids for visual effect
 
+    world.emitEvent("scene-transition", { view: "title" });
+
     // Spawn 30 asteroids of mixed sizes across the screen for visual effect
     // Game world bounds are approximately X[-130, 130] Y[-57, 57]
     const spawnPositions: Array<[number, number, number]> = [
@@ -83,19 +85,13 @@ export class TitleScene extends BaseScene {
     const asteroidRenderSystem = new AsteroidRenderSystem(this.threeJsScene);
     world.addSystem(asteroidRenderSystem);
 
-    // Fade in title asteroids by setting them to opacity 0 and triggering the fade-in event
+    // Make asteroids visible on title screen
     for (const asteroidId of this.asteroidEntityIds) {
       const material = world.get<BasicMaterial>(asteroidId, BasicMaterial);
       if (material) {
-        material.opacity = 0;
+        material.opacity = 1;
       }
     }
-
-    // Emit entering_zone_effect_complete to trigger asteroid fade-in
-    // Using a small delay to ensure asteroids are ready
-    setTimeout(() => {
-      world.emitEvent("entering_zone_effect_complete", { zoneNumber: 0 });
-    }, 100);
 
     // Note: Title scene doesn't need destruction system - it just displays animated asteroids
 

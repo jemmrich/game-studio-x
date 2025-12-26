@@ -110,7 +110,7 @@ export class EnteringZoneEffectSystem {
       if (elapsed % 500 < 16) { // Log roughly every 500ms
         const material = effect.particleMesh?.material as THREE.PointsMaterial | undefined;
         const opacity = material?.opacity.toFixed(2) || 'N/A';
-        console.log(`[EnteringZoneEffect] Progress: ${(progress * 100).toFixed(1)}% | Elapsed: ${elapsed.toFixed(0)}ms / ${effect.duration}ms | Opacity: ${opacity}`);
+        // console.log(`[EnteringZoneEffect] Progress: ${(progress * 100).toFixed(1)}% | Elapsed: ${elapsed.toFixed(0)}ms / ${effect.duration}ms | Opacity: ${opacity}`);
       }
 
       // Update particle positions and opacity
