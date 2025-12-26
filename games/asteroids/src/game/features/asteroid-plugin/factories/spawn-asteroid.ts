@@ -63,8 +63,11 @@ export function spawnAsteroid(
   const geometryProcessor = getAsteroidGeometryByTier(sizeTier);
   const processedPoints = geometryProcessor.getPoints();
   world.add(entity, new AsteroidGeometry(processedPoints));
-  // Visual components
-  world.add(entity, new BasicMaterial([0.8, 0.8, 0.8, 1.0])); // light gray
+  // Visual components - default to full opacity (title screen asteroids will be visible)
+  // GameplayScene will set to 0 before warp effect for fade-in animation
+  const asteroidMaterial = new BasicMaterial([0.8, 0.8, 0.8, 1.0], 0.0, 0.5, 1.0); // light gray, fully opaque
+
+  world.add(entity, asteroidMaterial);
 
   world.add(entity, new Visible(true));
 

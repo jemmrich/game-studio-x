@@ -16,6 +16,14 @@ export function GameUI({ world }: GameUIProps) {
     world.onEvent("scene-transition", (event) => {
       setCurrentView(event.data.view);
     });
+
+    world.onEvent("entering_zone", () => {
+      // setCurrentView("enteringZone");
+    });
+
+    world.onEvent("entering_zone_effect_complete", () => {
+      // setCurrentView("gameplay");
+    });
   }, [world]);
 
   switch (currentView) {

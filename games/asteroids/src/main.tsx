@@ -19,6 +19,7 @@ import { installShipPlugin, ShipRenderSystem } from "./game/features/ship-plugin
 import { installMissilePlugin, MissileRenderSystem } from "./game/features/missile-plugin/mod.ts";
 import { installAsteroidPlugin, AsteroidRenderSystem } from "./game/features/asteroid-plugin/mod.ts";
 import { installWaveManagerPlugin } from "./game/features/wave-manager-plugin/mod.ts";
+import { installEnteringZoneEffectPlugin } from "./game/features/entering-zone-effect-plugin/mod.ts";
 import * as THREE from "three";
 
 function main() {
@@ -69,8 +70,9 @@ function main() {
   // Store threeScene in world resources so scenes can access it
   world.addResource("threeScene", threeScene);
 
-  // Register Three.js renderer system
-  world.addSystem(new RendererSystem(threeScene, canvas));
+  // Register Three.js renderer system and store instance
+  const rendererSystem = new RendererSystem(threeScene, canvas);
+  world.addSystem(rendererSystem);
 
   // ═══════════════════════════════════════════════════════════════════
   // Install all game plugins once globally (not per-scene)
@@ -88,6 +90,9 @@ function main() {
   
   // Wave manager plugin
   installWaveManagerPlugin(world);
+
+  // Entering zone effect plugin
+  installEnteringZoneEffectPlugin(world, threeScene, rendererSystem.getCamera());
 
   // Ship plugin
   const shipPluginContext = installShipPlugin(world);

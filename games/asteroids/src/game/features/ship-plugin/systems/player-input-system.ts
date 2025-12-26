@@ -14,6 +14,8 @@ export class PlayerInputSystem {
   private keysPressed: Set<string> = new Set();
   private initialized = false;
   private shipEntityId: GUID | null = null;
+  private lastMissileFireTime = 0;
+  private missileFireCooldown = 120; // milliseconds between missile shots
 
   constructor(shipEntityId: GUID | null = null) {
     this.shipEntityId = shipEntityId;
@@ -83,18 +85,21 @@ export class PlayerInputSystem {
 
     // Handle missile spawn request (space bar)
     if (this.keysPressed.has(" ")) {
-      const transform = world.get<Transform>(this.shipEntityId, Transform);
-      if (transform) {
-        // Emit missile spawn event
-        world.emitEvent("missile_spawn_requested", {
-          position: transform.position,
-          direction: transform.rotation[2], // rotation around Z axis is our facing direction
-          shipEntityId: this.shipEntityId,
-        });
+      const now = performance.now();
+      // Only fire if enough time has passed since last shot
+      if (now - this.lastMissileFireTime >= this.missileFireCooldown) {
+        const transform = world.get<Transform>(this.shipEntityId, Transform);
+        if (transform) {
+          // Emit missile spawn event
+          world.emitEvent("missile_spawn_requested", {
+            position: transform.position,
+            direction: transform.rotation[2], // rotation around Z axis is our facing direction
+            shipEntityId: this.shipEntityId,
+          });
+          this.lastMissileFireTime = now;
+          shipComponent.isInvincible = false; // Clear invincibility on first shot
+        }
       }
-      // Consume the space key press
-      this.keysPressed.delete(" ");
-      shipComponent.isInvincible = false; // Clear invincibility on first shot
     }
 
     // Handle teleport/reset position (Q key)

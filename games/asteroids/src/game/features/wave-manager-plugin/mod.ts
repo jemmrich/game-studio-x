@@ -8,6 +8,7 @@ export {
   WaveTrackingSystem,
   WaveTransitionSystem,
   WaveInitializationSystem,
+  InitialZoneEntrySystem,
   PlayerRespawnSystem,
   MissileClearSystem,
   AsteroidClearSystem,
@@ -19,6 +20,7 @@ import {
   WaveTrackingSystem,
   WaveTransitionSystem,
   WaveInitializationSystem,
+  InitialZoneEntrySystem,
   PlayerRespawnSystem,
   MissileClearSystem,
   AsteroidClearSystem,
@@ -43,6 +45,7 @@ export function installWaveManagerPlugin(
   // Create and register systems
   const waveTrackingSystem = new WaveTrackingSystem();
   const waveTransitionSystem = new WaveTransitionSystem();
+  const initialZoneEntrySystem = new InitialZoneEntrySystem();
   const waveInitializationSystem = new WaveInitializationSystem();
   const playerRespawnSystem = new PlayerRespawnSystem();
   const missileClearSystem = new MissileClearSystem();
@@ -54,6 +57,7 @@ export function installWaveManagerPlugin(
 
   // Setup event listeners for all event-driven systems
   waveTransitionSystem.setup(world);
+  initialZoneEntrySystem.setup(world);  // Emit entering_zone for Wave 1
   asteroidClearSystem.setup(world);  // Must be before waveInitializationSystem to clear old asteroids before spawning new ones
   waveInitializationSystem.setup(world);
   playerRespawnSystem.setup(world);
@@ -65,6 +69,7 @@ export function installWaveManagerPlugin(
   world.addSystem(waveTransitionSystem);
 
   // Add event-driven systems (they have setup() called above)
+  world.addSystem(initialZoneEntrySystem);
   world.addSystem(asteroidClearSystem);
   world.addSystem(waveInitializationSystem);
   world.addSystem(playerRespawnSystem);
@@ -74,6 +79,7 @@ export function installWaveManagerPlugin(
   return {
     waveTrackingSystem,
     waveTransitionSystem,
+    initialZoneEntrySystem,
     waveInitializationSystem,
     playerRespawnSystem,
     missileClearSystem,
@@ -89,6 +95,7 @@ export function installWaveManagerPlugin(
 export interface WaveManagerPluginContext {
   waveTrackingSystem: WaveTrackingSystem;
   waveTransitionSystem: WaveTransitionSystem;
+  initialZoneEntrySystem: InitialZoneEntrySystem;
   waveInitializationSystem: WaveInitializationSystem;
   playerRespawnSystem: PlayerRespawnSystem;
   missileClearSystem: MissileClearSystem;

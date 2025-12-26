@@ -58,4 +58,11 @@ export class RendererSystem {
   dispose(): void {
     this.renderer.dispose();
   }
+
+  /**
+   * Get the camera for use by other systems
+   */
+  getCamera(): THREE.PerspectiveCamera {
+    return this.camera;
+  }
 }

@@ -2,6 +2,7 @@ import type { World } from "@engine/core/world.ts";
 import { AsteroidGeometry } from "../components/asteroid-geometry.ts";
 import { AsteroidComponent } from "../components/asteroid.ts";
 import { Transform } from "@engine/features/transform-plugin/mod.ts";
+import { BasicMaterial } from "@engine/features/render-plugin/mod.ts";
 import { getCollisionRadius } from "../config/asteroid-size-config.ts";
 import * as THREE from "three";
 
@@ -164,6 +165,14 @@ export class AsteroidRenderSystem {
     mesh.position.set(transform.position[0], transform.position[1], transform.position[2]);
     mesh.rotation.set(transform.rotation[0], transform.rotation[1], transform.rotation[2]);
     mesh.scale.set(transform.scale[0], transform.scale[1], transform.scale[2]);
+
+    // Update material opacity from ECS material component
+    const ecsMaterial = world.get<BasicMaterial>(entity, BasicMaterial);
+    if (ecsMaterial && mesh.material instanceof THREE.LineBasicMaterial) {
+      mesh.material.opacity = ecsMaterial.opacity;
+      // Enable transparency if opacity is less than 1
+      mesh.material.transparent = ecsMaterial.opacity < 1;
+    }
   }
 
   private cleanupRemovedAsteroids(renderedAsteroids: Set<string>): void {

@@ -12,6 +12,7 @@ import { AsteroidMovementSystem } from "./systems/asteroid-movement-system.ts";
 import { AsteroidCollisionSystem } from "./systems/asteroid-collision-system.ts";
 import { AsteroidDestructionSystem } from "./systems/asteroid-destruction-system.ts";
 import { AsteroidSpawningSystem } from "./systems/asteroid-spawning-system.ts";
+import { AsteroidFadeInSystem } from "./systems/asteroid-fade-in-system.ts";
 
 // Track whether the asteroid plugin has been installed to prevent duplicate systems
 let asteroidPluginInstalled = false;
@@ -21,6 +22,7 @@ let cachedSystems: {
   collisionSystem: AsteroidCollisionSystem;
   destructionSystem: AsteroidDestructionSystem;
   spawningSystem: AsteroidSpawningSystem;
+  fadeInSystem: AsteroidFadeInSystem;
 } | null = null;
 
 /**
@@ -40,7 +42,7 @@ export function installAsteroidPlugin(world: World): {
   movementSystem: AsteroidMovementSystem;
   collisionSystem: AsteroidCollisionSystem;
   destructionSystem: AsteroidDestructionSystem;
-  spawningSystem: AsteroidSpawningSystem;
+  fadeInSystem: AsteroidFadeInSystem;
 } {
   // If already installed, return the cached systems without creating duplicates
   if (asteroidPluginInstalled && cachedSystems) {
@@ -51,9 +53,12 @@ export function installAsteroidPlugin(world: World): {
   const asteroidCollisionSystem = new AsteroidCollisionSystem();
   const asteroidDestructionSystem = new AsteroidDestructionSystem();
   const asteroidSpawningSystem = new AsteroidSpawningSystem();
+  const asteroidFadeInSystem = new AsteroidFadeInSystem(1000); // 1 second fade-in
 
   // Add movement system early
   world.addSystem(asteroidMovementSystem);
+  // Add fade-in system to handle asteroid opacity animation
+  world.addSystem(asteroidFadeInSystem);
   // NOTE: AsteroidCollisionSystem will be added later by scenes in the correct order
   // to ensure it runs AFTER MissileCollisionSystem
   // AsteroidDestructionSystem and AsteroidSpawningSystem are NOT added here
@@ -65,7 +70,11 @@ export function installAsteroidPlugin(world: World): {
     collisionSystem: asteroidCollisionSystem,
     destructionSystem: asteroidDestructionSystem,
     spawningSystem: asteroidSpawningSystem,
+    fadeInSystem: asteroidFadeInSystem,
   };
+
+  // Setup event listeners for fade-in system
+  asteroidFadeInSystem.setup(world);
 
   // Return all systems so they can be added in the correct order in gameplay scene
   return cachedSystems;

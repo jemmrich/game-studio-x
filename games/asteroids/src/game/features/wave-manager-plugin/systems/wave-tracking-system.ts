@@ -40,6 +40,7 @@ export class WaveTrackingSystem {
     if (
       waveManager.asteroidCount === 0 &&
       waveManager.alienCount === 0 &&
+      waveManager.hasSpawnedAsteroidsThisWave &&
       !waveManager.isWaveComplete
     ) {
       waveManager.isWaveComplete = true;

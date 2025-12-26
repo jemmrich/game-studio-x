@@ -23,6 +23,7 @@ export class WaveManager {
   // Wave state flags
   isAsteroidsCleared: boolean = false;
   isWaveComplete: boolean = false;
+  hasSpawnedAsteroidsThisWave: boolean = false;
 
   // Difficulty
   difficultyMultiplier: number = 1.0;
@@ -55,6 +56,7 @@ export class WaveManager {
     this.aliensDestroyedThisWave = 0;
     this.isAsteroidsCleared = false;
     this.isWaveComplete = false;
+    this.hasSpawnedAsteroidsThisWave = false;
     this.waveStartTime = currentTime;
   }
 

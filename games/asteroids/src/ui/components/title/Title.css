@@ -25,9 +25,7 @@
 
 .asteroids-title {
   font-size: 8rem;
-  font-weight: 900;
   color: #ffffff;
-  letter-spacing: 0.15em;
   margin: 0;
   line-height: 1;
 }
@@ -36,7 +34,7 @@
   font-size: 2.5rem;
   font-weight: 700;
   color: #ff0000;
-  letter-spacing: 0.5em;
+  letter-spacing: 0.1em;
   margin: 0;
   animation: fadeInOut 1.5s ease-in-out infinite;
 }

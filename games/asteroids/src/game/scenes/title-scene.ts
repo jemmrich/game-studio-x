@@ -4,6 +4,7 @@ import type { GUID } from "@engine/utils/guid.ts";
 import { SceneManager } from "@engine/resources/scene-manager.ts";
 import { Tag } from "@engine/components/tag.ts";
 import { spawnAsteroid, AsteroidRenderSystem } from "../features/asteroid-plugin/mod.ts";
+import { BasicMaterial } from "@engine/features/render-plugin/mod.ts";
 import { GameplayScene } from "./gameplay.ts";
 import * as THREE from "three";
 
@@ -81,6 +82,20 @@ export class TitleScene extends BaseScene {
     // Create and register Three.js rendering system for asteroids
     const asteroidRenderSystem = new AsteroidRenderSystem(this.threeJsScene);
     world.addSystem(asteroidRenderSystem);
+
+    // Fade in title asteroids by setting them to opacity 0 and triggering the fade-in event
+    for (const asteroidId of this.asteroidEntityIds) {
+      const material = world.get<BasicMaterial>(asteroidId, BasicMaterial);
+      if (material) {
+        material.opacity = 0;
+      }
+    }
+
+    // Emit entering_zone_effect_complete to trigger asteroid fade-in
+    // Using a small delay to ensure asteroids are ready
+    setTimeout(() => {
+      world.emitEvent("entering_zone_effect_complete", { zoneNumber: 0 });
+    }, 100);
 
     // Note: Title scene doesn't need destruction system - it just displays animated asteroids
 

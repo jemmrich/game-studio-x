@@ -12,30 +12,30 @@ interface WorldEvent {
 /**
  * WaveInitializationSystem
  * Spawns asteroids and resets the player position when a new wave begins.
- * - Listens for wave_transition event
+ * - Listens for entering_zone_effect_complete event (waits for warp effect to finish)
  * - Spawns asteroids with difficulty scaling
  * - Respawns player at center of screen
  * - Sets wave start time for duration tracking
  */
 export class WaveInitializationSystem {
-  private waveListener?: (event: WorldEvent) => void;
+  private effectCompleteListener?: (event: WorldEvent) => void;
   private lastInitializedWave: number = -1;
 
   /**
    * Setup event listeners during initialization
    */
   setup(world: World): void {
-    this.waveListener = (event) => {
+    this.effectCompleteListener = (event) => {
       console.log(
-        `[Wave Initialization] Received event with data:`,
+        `[Wave Initialization] Received entering_zone_effect_complete event`,
         event,
       );
       this.onInitializeWave(world, event);
     };
 
-    // Listen for both start_wave (Wave 1) and wave_transition (Wave 2+) events
-    world.onEvent("start_wave", this.waveListener);
-    world.onEvent("wave_transition", this.waveListener);
+    // Listen for entering_zone_effect_complete event (warp effect finished playing)
+    // This delays asteroid spawning until after the warp effect completes
+    world.onEvent("entering_zone_effect_complete", this.effectCompleteListener);
   }
 
   /**
@@ -123,11 +123,8 @@ export class WaveInitializationSystem {
     let spawnedCount = 0;
     for (const position of spawnPositions) {
       try {
-        const asteroidId = spawnAsteroid(world, position, 3); // Size 3 = Large
+        spawnAsteroid(world, position, 3); // Size 3 = Large
         spawnedCount++;
-        console.log(
-          `[Wave Initialization] Spawned asteroid ${asteroidId} at [${position[0].toFixed(2)}, ${position[1].toFixed(2)}, ${position[2].toFixed(2)}]`,
-        );
       } catch (error) {
         console.error(
           `[Wave Initialization] Error spawning asteroid at [${position[0]}, ${position[1]}, ${position[2]}]: ${error}`,
@@ -137,7 +134,6 @@ export class WaveInitializationSystem {
     console.log(
       `[Wave Initialization] Finished spawning wave. Spawned ${spawnedCount} / ${spawnPositions.length} asteroids`,
     );
-
     // Verify asteroids were actually added
     const verifyQuery = world.query(AsteroidComponent);
     const verifyCount = verifyQuery.entities().length;
@@ -145,14 +141,20 @@ export class WaveInitializationSystem {
       `[Wave Initialization] Verification: World now contains ${verifyCount} total asteroids`,
     );
 
-    // Emit event to respawn player at center
-    world.emitEvent("respawn_player", {
-      position: [0, 0, 0],
-    });
+    // Mark that asteroids have been spawned for this wave
+    waveManager.hasSpawnedAsteroidsThisWave = true;
 
     // Update wave start time (in milliseconds from performance.now())
     const time = world.getResource<Time>("time");
     waveManager.waveStartTime = time.elapsed;
+
+    // Delay player respawn slightly so asteroids appear first
+    // This gives the player a moment to see the asteroid field before their ship spawns
+    setTimeout(() => {
+      world.emitEvent("respawn_player", {
+        position: [0, 0, 0],
+      });
+    }, 200); // 200ms delay
   }
 
   /**
@@ -196,6 +198,6 @@ export class WaveInitializationSystem {
    * Cleanup event listeners
    */
   dispose(): void {
-    this.waveListener = undefined;
+    this.effectCompleteListener = undefined;
   }
 }
