@@ -1,7 +1,6 @@
 import type { World } from "@engine/core/world.ts";
 import * as THREE from "three";
 import { EnteringZoneEffectComponent } from "../components/entering-zone-effect.ts";
-import { Time } from "@engine/resources/time.ts";
 
 interface WorldEvent {
   type: string;
@@ -10,11 +9,11 @@ interface WorldEvent {
 
 /**
  * Fade animation constants (as fractions of total animation duration)
- * Adjust these to control how quickly particles fade out
+ * Adjust these to control how quickly particles fade in and out
  */
 const FADE_IN_START = 0.0;      // When fade in begins (0 = at start)
-const FADE_IN_END = 0.0;        // When fade in completes (0 = instant, no fade in)
-const FADE_OUT_START = 0.95;    // When fade out begins (0.95 = 95% of animation)
+const FADE_IN_END = 0.20;       // When fade in completes (20% of animation)
+const FADE_OUT_START = 0.70;    // When fade out begins (70% of animation)
 const FADE_OUT_END = 1.0;       // When fade out completes (1.0 = at end)
 
 /**
