@@ -26,10 +26,6 @@ export class WaveInitializationSystem {
    */
   setup(world: World): void {
     this.effectCompleteListener = (event) => {
-      console.log(
-        `[Wave Initialization] Received entering_zone_effect_complete event`,
-        event,
-      );
       this.onInitializeWave(world, event);
     };
 
@@ -74,15 +70,7 @@ export class WaveInitializationSystem {
     // Verify no old asteroids are lingering (debug check)
     const existingAsteroids = world.query(AsteroidComponent);
     const asteroidCount = existingAsteroids.entities().length;
-    console.log(
-      `[Wave Initialization] Starting wave ${waveManager.currentWaveNumber} with ${asteroidCount} existing asteroids`,
-    );
-    if (asteroidCount > 0) {
-      console.warn(
-        `[Wave Initialization] WARNING: Found ${asteroidCount} existing asteroids when spawning wave ${waveManager.currentWaveNumber}! These should have been destroyed.`,
-      );
-    }
-
+    
     // Calculate asteroid spawn count based on difficulty
     // Base: 10 asteroids per wave
     const baseAsteroidCount = 10;
@@ -91,35 +79,18 @@ export class WaveInitializationSystem {
     );
     
     if (scaledAsteroidCount <= 0) {
-      console.error(
-        `[Wave Initialization] ERROR: Scaled asteroid count is ${scaledAsteroidCount}! Base: ${baseAsteroidCount}, Difficulty: ${difficultyMultiplier}`,
-      );
       return;
     }
     
-    console.log(
-      `[Wave Initialization] Spawning ${scaledAsteroidCount} asteroids for wave ${waveManager.currentWaveNumber}`,
-    );
-
     // Game world bounds are approximately X[-130, 130] Y[-57, 57]
     const spawnPositions: Array<[number, number, number]> = this
       .generateSpawnPositions(scaledAsteroidCount);
     
-    console.log(
-      `[Wave Initialization] Generated ${spawnPositions.length} spawn positions`,
-    );
-    
     if (spawnPositions.length === 0) {
-      console.error(
-        `[Wave Initialization] ERROR: No spawn positions generated!`,
-      );
       return;
     }
 
     // Spawn asteroids for the new wave
-    console.log(
-      `[Wave Initialization] Starting to spawn ${spawnPositions.length} asteroids...`,
-    );
     let spawnedCount = 0;
     for (const position of spawnPositions) {
       try {
@@ -131,15 +102,10 @@ export class WaveInitializationSystem {
         );
       }
     }
-    console.log(
-      `[Wave Initialization] Finished spawning wave. Spawned ${spawnedCount} / ${spawnPositions.length} asteroids`,
-    );
+
     // Verify asteroids were actually added
     const verifyQuery = world.query(AsteroidComponent);
     const verifyCount = verifyQuery.entities().length;
-    console.log(
-      `[Wave Initialization] Verification: World now contains ${verifyCount} total asteroids`,
-    );
 
     // Mark that asteroids have been spawned for this wave
     waveManager.hasSpawnedAsteroidsThisWave = true;

@@ -71,17 +71,14 @@ export class EnteringZoneEffectSystem {
    */
   setup(world: World): void {
     if (this.enteringZoneListener) {
-      console.log("[EnteringZoneEffectSystem] Already setup, skipping");
       return;
     }
 
-    console.log("[EnteringZoneEffectSystem] Setting up event listener");
     this.enteringZoneListener = (event) => {
       this.onEnteringZone(world, event);
     };
 
     world.onEvent("entering_zone", this.enteringZoneListener);
-    console.log("[EnteringZoneEffectSystem] Event listener registered");
   }
 
   /**
@@ -146,36 +143,25 @@ export class EnteringZoneEffectSystem {
    * Handle entering_zone event
    */
   private onEnteringZone(world: World, event: WorldEvent): void {
-    console.log("[EnteringZoneEffectSystem] onEnteringZone called, isCreating:", this.isCreatingEffect);
-    
     if (this.isCreatingEffect) {
-      console.log("[EnteringZoneEffectSystem] Already creating effect, skipping");
       return;
     }
 
     this.isCreatingEffect = true;
 
     try {
-      console.log("[EnteringZoneEffectSystem] onEnteringZone called");
       const zoneNumber = event.data.zoneNumber as number;
-      console.log("[EnteringZoneEffectSystem] Zone number:", zoneNumber);
 
       // Create effect entity
       const entity = world.createEntity();
-      console.log("[EnteringZoneEffectSystem] Created entity:", entity);
 
       // Create and initialize particles
-      console.log("[EnteringZoneEffectSystem] Creating particles...");
       const { geometry, mesh, positions, velocities } = this.createParticles();
-      console.log("[EnteringZoneEffectSystem] Particles created, geometry:", geometry, "mesh:", mesh);
 
       const startTime = performance.now();
-      console.log("[EnteringZoneEffectSystem] Start time:", startTime);
 
       // Create effect component and assign properties
-      console.log("[EnteringZoneEffectSystem] Creating component instance...");
       const effect = new EnteringZoneEffectComponent();
-      console.log("[EnteringZoneEffectSystem] Component instance created:", effect, "typeof:", typeof effect);
       
       effect.zoneNumber = zoneNumber;
       effect.startTime = startTime;
@@ -188,21 +174,12 @@ export class EnteringZoneEffectSystem {
       effect.acceleration = this.config.acceleration;
       effect.fadeOutStart = this.config.fadeOutStart;
 
-      console.log("[EnteringZoneEffectSystem] Properties assigned, effect:", effect);
-      console.log("[EnteringZoneEffectSystem] About to call world.add, effect is:", effect, "is undefined?", effect === undefined);
-      
       // Attach component to entity
-      console.log("[EnteringZoneEffectSystem] Calling world.add with entity:", entity, "effect:", effect);
       world.add(entity, effect);
-      console.log("[EnteringZoneEffectSystem] world.add completed successfully");
-
-      console.log("[EnteringZoneEffectSystem] Component attached successfully");
 
       // Add mesh to THREE.js scene
-      console.log("[EnteringZoneEffectSystem] Adding mesh to THREE.js scene");
       try {
         this.threeScene.add(mesh);
-        console.log("[EnteringZoneEffectSystem] Mesh added to scene successfully");
       } catch (meshError) {
         console.error("[EnteringZoneEffectSystem] Error adding mesh to scene:", meshError);
       }
