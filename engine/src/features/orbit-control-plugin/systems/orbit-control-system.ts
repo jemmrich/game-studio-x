@@ -2,8 +2,8 @@
 // but may not be resolvable when type-checking the engine in isolation
 import type { World } from "../../../core/world.ts";
 import { OrbitControls } from "../controls/OrbitControls.ts";
-import type { PerspectiveCamera } from "three";
-import { Vector3, PerspectiveCamera as ThreePerspectiveCamera } from "three";
+import type { PerspectiveCamera } from "../../../three.ts";
+import { Vector3, PerspectiveCamera as ThreePerspectiveCamera } from "../../../three.ts";
 import { CameraState } from "../../render-plugin/resources/camera-state.ts";
 import { OrbitControlConfig } from "../resources/orbit-control-config.ts";
 import type { HTMLCanvasElement } from "../../render-plugin/types.ts";
