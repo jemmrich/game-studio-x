@@ -30,7 +30,7 @@ export default defineConfig({
   },
   optimizeDeps: {
     exclude: ["@dimforge/rapier3d-compat"],
-    include: ["three/examples/jsm/controls/OrbitControls.js"],
+    include: ["three"],
   },
   ssr: {
     external: ["@dimforge/rapier3d-compat"],
