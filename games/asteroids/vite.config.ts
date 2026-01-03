@@ -20,6 +20,14 @@ export default defineConfig({
   },
   build: {
     sourcemap: true,
+    rollupOptions: {
+      external: ["three"],
+      output: {
+        globals: {
+          three: "THREE",
+        },
+      },
+    },
   },
   // WebAssembly configuration for Rapier physics engine
   wasm: {
