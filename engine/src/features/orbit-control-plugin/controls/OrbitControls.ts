@@ -354,7 +354,7 @@ class OrbitControls extends Controls {
 		this.zoom0 = this.object.zoom;
 
 		// the target DOM element for key events
-		this._domElementKeyEvents: any = null;
+		this._domElementKeyEvents = null;
 
 		// internals
 
@@ -392,8 +392,8 @@ class OrbitControls extends Controls {
 		this._mouse = new Vector2();
 		this._performCursorZoom = false;
 
-		this._pointers: any[] = [];
-		this._pointerPositions: any = {};
+		this._pointers = [];
+		this._pointerPositions = {};
 
 		this._controlActive = false;
 
