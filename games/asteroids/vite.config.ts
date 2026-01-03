@@ -12,6 +12,10 @@ export default defineConfig({
         fileURLToPath(new URL(".", import.meta.url)),
         "../../engine/src",
       ),
+      "three": resolve(
+        fileURLToPath(new URL(".", import.meta.url)),
+        "node_modules/three/build/three.module.js",
+      ),
     },
   },
   server: {
