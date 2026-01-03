@@ -270,29 +270,29 @@ emits entering_zone_complete  auto-fades out
 - [x] Confirm React event subscription mechanism with main.tsx setup
 
 ### Phase 2 — Core System Implementation
-- [ ] Create `EnteringZoneEffectSystem` class
-- [ ] Create `EnteringZoneEffectComponent` interface
-- [ ] Implement particle spawning and initialization
-- [ ] Implement animation loop with easing
-- [ ] Implement self-destruction on completion
+- [x] Create `EnteringZoneEffectSystem` class
+- [x] Create `EnteringZoneEffectComponent` interface
+- [x] Implement particle spawning and initialization
+- [x] Implement animation loop with easing
+- [x] Implement self-destruction on completion
 
 ### Phase 3 — React Integration
-- [ ] Create `useEnteringZoneEffect` hook
-- [ ] Create `EnteringZoneOverlay` component
-- [ ] Set up event bridge between engine and React (window.gameEngine reference)
-- [ ] Add CSS animations and styling
+- [x] Create `useEnteringZoneEffect` hook
+- [x] Create `EnteringZoneOverlay` component
+- [x] Set up event bridge between engine and React (window.gameEngine reference)
+- [x] Add CSS animations and styling
 
 ### Phase 4 — Integration & Testing
-- [ ] Hook up system to wave manager plugin
-- [ ] Test event flow during wave transitions
-- [ ] Verify no performance regression during effect
-- [ ] Verify ship remains controllable during effect
-- [ ] Verify UI and particles are in sync
+- [x] Hook up system to wave manager plugin
+- [x] Test event flow during wave transitions
+- [x] Verify no performance regression during effect
+- [x] Verify ship remains controllable during effect
+- [x] Verify UI and particles are in sync
 
 ### Phase 5 — Polish & Tuning
-- [ ] Adjust particle count/spread for visual appeal
-- [ ] Fine-tune animation easing curve
-- [ ] Test on different screen sizes (UI scaling)
+- [x] Adjust particle count/spread for visual appeal (8000 particles, 200-unit spread)
+- [x] Fine-tune animation easing curve (4-second animation, 0.012 acceleration factor)
+- [x] Test on different screen sizes (UI scaling)
 - [ ] Optional: Add config file for easy tweaking
 
 ## References
