@@ -1,7 +1,7 @@
 // This file uses Three.js which is available at runtime in consuming applications
 // but may not be resolvable when type-checking the engine in isolation
 import type { World } from "../../../core/world.ts";
-import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import type { PerspectiveCamera } from "three";
 import { Vector3, PerspectiveCamera as ThreePerspectiveCamera } from "three";
 import { CameraState } from "../../render-plugin/resources/camera-state.ts";
