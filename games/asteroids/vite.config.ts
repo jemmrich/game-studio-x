@@ -20,6 +20,9 @@ export default defineConfig({
   },
   build: {
     sourcemap: true,
+    rollupOptions: {
+      external: ["three/examples/jsm/controls/OrbitControls.js"],
+    },
   },
   // WebAssembly configuration for Rapier physics engine
   wasm: {
