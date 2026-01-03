@@ -12,6 +12,7 @@ export default defineConfig({
         fileURLToPath(new URL(".", import.meta.url)),
         "../../engine/src",
       ),
+      "three/examples/jsm/controls/OrbitControls.js": "three/examples/jsm/controls/OrbitControls.js",
     },
   },
   server: {
@@ -20,9 +21,6 @@ export default defineConfig({
   },
   build: {
     sourcemap: true,
-    rollupOptions: {
-      external: ["three", "three/examples/jsm/controls/OrbitControls.js"],
-    },
   },
   // WebAssembly configuration for Rapier physics engine
   wasm: {
