@@ -145,7 +145,12 @@ function main() {
 
   // Handle window resize
   globalThis.addEventListener("resize", () => {
-    // RenderPlugin will handle canvas resize
+    // Update Three.js camera aspect ratio
+    const camera = rendererSystem.getCamera();
+    const width = canvas.clientWidth;
+    const height = canvas.clientHeight;
+    camera.aspect = width / height;
+    camera.updateProjectionMatrix();
   });
 
   let lastTime = performance.now();
