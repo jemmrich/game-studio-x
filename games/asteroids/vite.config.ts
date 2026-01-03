@@ -20,14 +20,6 @@ export default defineConfig({
   },
   build: {
     sourcemap: true,
-    rollupOptions: {
-      external: ["three"],
-      output: {
-        globals: {
-          three: "THREE",
-        },
-      },
-    },
   },
   // WebAssembly configuration for Rapier physics engine
   wasm: {
@@ -38,7 +30,6 @@ export default defineConfig({
   },
   optimizeDeps: {
     exclude: ["@dimforge/rapier3d-compat"],
-    include: ["three"],
   },
   ssr: {
     external: ["@dimforge/rapier3d-compat"],
