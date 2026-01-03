@@ -1,5 +1,4 @@
 import type { World } from "@engine/core/world.ts";
-import type { Query } from "@engine/core/query.ts";
 import type { GUID } from "@engine/utils/guid.ts";
 import { AsteroidComponent } from "../components/asteroid.ts";
 import { ShipComponent } from "../../ship-plugin/components/mod.ts";
@@ -16,9 +15,6 @@ import { getCollisionRadius } from "../config/asteroid-size-config.ts";
  * - Removes projectiles on impact
  */
 export class AsteroidCollisionSystem {
-  private asteroidQuery: Query | null = null;
-  private shipQuery: Query | null = null;
-
   update(world: World, _dt: number): void {
     // Check for collision events from missile system
     const collisionEvents = world.getEvents("asteroid_projectile_collision");
@@ -67,22 +63,20 @@ export class AsteroidCollisionSystem {
   }
 
   private checkShipAsteroidCollisions(world: World): void {
-    // Lazy initialize queries
-    if (!this.asteroidQuery) {
-      this.asteroidQuery = world.query(AsteroidComponent, Transform);
+    // Create fresh queries every frame to ensure we catch the ship entity
+    // This is critical because the ship respawns and we need to detect it in collisions
+    const asteroidQuery = world.query(AsteroidComponent, Transform);
+    let shipQuery: Query | null = null;
+
+    try {
+      shipQuery = world.query(ShipComponent, Transform);
+    } catch {
+      // Ship query may not be available yet
+      return;
     }
 
-    if (!this.shipQuery) {
-      try {
-        this.shipQuery = world.query(ShipComponent, Transform);
-      } catch {
-        // Ship query may not be available yet
-        return;
-      }
-    }
-
-    const asteroids = this.asteroidQuery.entities();
-    const ships = this.shipQuery.entities();
+    const asteroids = asteroidQuery.entities();
+    const ships = shipQuery.entities();
 
     // If no ships or asteroids, nothing to collide
     if (ships.length === 0 || asteroids.length === 0) {

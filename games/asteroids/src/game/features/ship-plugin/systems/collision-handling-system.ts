@@ -59,9 +59,12 @@ export class CollisionHandlingSystem {
       return;
     }
 
-    // Set invincibility immediately to prevent secondary collisions in the same frame
-    // (e.g., if ship hits a big asteroid that spawns smaller ones)
+    // Set invincibility immediately to protect player
+    // - Prevents secondary collisions in the same frame (e.g., if ship hits a big asteroid that spawns smaller ones)
+    // - Provides protection during the death and respawn sequence
+    // - Maintained until player moves or shoots after respawning
     shipComponent.isInvincible = true;
+    console.log("[CollisionHandling] Player hit! Invincibility activated. Lives: " + shipComponent.lives);
 
     const { asteroidId } = collision;
 
@@ -103,7 +106,9 @@ export class CollisionHandlingSystem {
         visible.enabled = false;
       }
 
-      // Schedule respawn after 1 second
+      console.log("[CollisionHandling] Player destroyed. Scheduling respawn in 3 seconds...");
+
+      // Schedule respawn after 3 seconds
       setTimeout(() => {
         this.respawnShipAfterCooldown(world);
       }, 3000);
@@ -129,6 +134,17 @@ export class CollisionHandlingSystem {
   private respawnShip(world: World): void {
     if (this.shipEntityId === null) return;
 
+    const shipComponent = world.get<ShipComponent>(
+      this.shipEntityId,
+      ShipComponent,
+    );
+
+    // Ensure invincibility is maintained during respawn (should already be true from collision)
+    if (shipComponent) {
+      shipComponent.isInvincible = true;
+      console.log("[CollisionHandling] Ship respawning with invincibility enabled");
+    }
+
     // Make the ship visible again
     const visible = world.get<Visible>(this.shipEntityId, Visible);
     if (visible) {
@@ -140,15 +156,6 @@ export class CollisionHandlingSystem {
     if (transform) {
       transform.position = [0, 0, 0];
       transform.rotation = [0, 0, 0];
-    }
-
-    // Set invincibility
-    const shipComponent = world.get<ShipComponent>(
-      this.shipEntityId,
-      ShipComponent,
-    );
-    if (shipComponent) {
-      shipComponent.isInvincible = true;
     }
 
     // Emit respawn event

@@ -3,6 +3,10 @@ import { Time } from "@engine/resources/time.ts";
 import { WaveManager } from "../resources/wave-manager.ts";
 import { spawnAsteroid } from "../../asteroid-plugin/factories/spawn-asteroid.ts";
 import { AsteroidComponent } from "../../asteroid-plugin/components/asteroid.ts";
+import { getCollisionRadius } from "../../asteroid-plugin/config/asteroid-size-config.ts";
+import { ShipComponent } from "../../ship-plugin/components/ship.ts";
+import { Transform } from "@engine/features/transform-plugin/mod.ts";
+import { Visible } from "@engine/features/render-plugin/mod.ts";
 
 interface WorldEvent {
   type: string;
@@ -67,6 +71,31 @@ export class WaveInitializationSystem {
       `[Wave Initialization] Difficulty multiplier: ${difficultyMultiplier} (from event: ${eventData.difficultyMultiplier}, from manager: ${waveManager.difficultyMultiplier})`,
     );
 
+    // Reset ship position BEFORE spawning asteroids to prevent collision with old ship position
+    // This ensures asteroids spawn without colliding with the ship from the previous wave
+    const ships = world.query(ShipComponent);
+    const shipEntities = ships.entities();
+    if (shipEntities.length > 0) {
+      const shipEntity = shipEntities[0];
+      
+      // Move ship to center and make invisible
+      const transform = world.get<Transform>(shipEntity, Transform);
+      if (transform) {
+        transform.position = [0, 0, 0];
+        transform.rotation = [0, 0, 0];
+      }
+      
+      const visible = world.get<Visible>(shipEntity, Visible);
+      if (visible) {
+        visible.enabled = false;
+      }
+      
+      const shipComponent = world.get<ShipComponent>(shipEntity, ShipComponent);
+      if (shipComponent) {
+        shipComponent.isInvincible = true;
+      }
+    }
+
     // Verify no old asteroids are lingering (debug check)
     const existingAsteroids = world.query(AsteroidComponent);
     const asteroidCount = existingAsteroids.entities().length;
@@ -125,6 +154,7 @@ export class WaveInitializationSystem {
 
   /**
    * Generate spawn positions distributed across the game world
+   * Ensures asteroids spawn far from the player at [0, 0, 0]
    */
   private generateSpawnPositions(
     count: number,
@@ -132,6 +162,16 @@ export class WaveInitializationSystem {
     const positions: Array<[number, number, number]> = [];
     const maxX = 130;
     const maxY = 57;
+    
+    // Calculate safe distance: player radius + asteroid radius + buffer
+    // Player collision radius ≈ 8 units (from bounding box)
+    // Size 3 asteroid collision radius = 1.0 * 7.5 = 7.5 units
+    // Buffer = 15 units for safety margin
+    // Total = 8 + 7.5 + 15 = 30.5, rounded to 35 for margin
+    const playerCollisionRadius = 8;
+    const asteroidCollisionRadius = getCollisionRadius(3); // Size 3 asteroids spawn at wave start
+    const safetyBuffer = 15;
+    const playerSafeDistance = playerCollisionRadius + asteroidCollisionRadius + safetyBuffer;
 
     // Create a grid-based pattern with some randomization
     const gridSize = Math.ceil(Math.sqrt(count));
@@ -153,6 +193,16 @@ export class WaveInitializationSystem {
       // Clamp to game bounds with margin
       x = Math.max(-maxX + 10, Math.min(maxX - 10, x));
       y = Math.max(-maxY + 10, Math.min(maxY - 10, y));
+
+      // Ensure asteroid doesn't spawn too close to player center [0, 0, 0]
+      // Distance must account for both player and asteroid collision radii
+      const distanceFromPlayer = Math.sqrt(x * x + y * y);
+      if (distanceFromPlayer < playerSafeDistance) {
+        // Push asteroid further away from player
+        const angle = Math.atan2(y, x);
+        x = Math.cos(angle) * playerSafeDistance;
+        y = Math.sin(angle) * playerSafeDistance;
+      }
 
       positions.push([x, y, 0]);
     }

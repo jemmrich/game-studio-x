@@ -61,6 +61,12 @@ export class PlayerRespawnSystem {
     // Get the first (and typically only) ship
     const shipEntity = shipEntities[0];
 
+    // Set invincibility immediately to protect player during respawn sequence
+    const shipComponent = world.get<ShipComponent>(shipEntity, ShipComponent);
+    if (shipComponent) {
+      shipComponent.isInvincible = true;
+    }
+
     // Make ship invisible temporarily for respawn sequence
     const visible = world.get<Visible>(shipEntity, Visible);
     if (visible) {
@@ -73,7 +79,7 @@ export class PlayerRespawnSystem {
     }, 2000);
 
     console.log(
-      `[Player Respawn] Ship will respawn at [${position[0]}, ${position[1]}, ${position[2]}] in 2 seconds...`,
+      `[Player Respawn] Ship will respawn at [${position[0]}, ${position[1]}, ${position[2]}] in 2 seconds... (Invincibility: ON)`,
     );
   }
 
@@ -106,18 +112,21 @@ export class PlayerRespawnSystem {
       velocity.z = 0;
     }
 
-    // Set invincibility (cleared when player moves or shoots)
+    // Ensure invincibility is on during respawn
+    // - Set immediately when player is hit (in CollisionHandlingSystem)
+    // - Maintained through entire death-respawn sequence
+    // - Provides protection during spawn animation
+    // - Cleared when player moves or shoots
     const shipComponent = world.get<ShipComponent>(shipEntity, ShipComponent);
     if (shipComponent) {
       shipComponent.isInvincible = true;
       // Also reset thrust state to clear any momentum
       shipComponent.isThrusting = false;
       shipComponent.rotationDirection = 0;
+      console.log(
+        `[Player Respawn] Ship respawned at position [${position[0]}, ${position[1]}, ${position[2]}] - Invincibility ON (Lives: ${shipComponent.lives})`,
+      );
     }
-
-    console.log(
-      `[Player Respawn] Ship respawned at position [${position[0]}, ${position[1]}, ${position[2]}] - invincible until movement!`,
-    );
   }
 
   /**

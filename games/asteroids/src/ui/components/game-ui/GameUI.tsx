@@ -3,6 +3,7 @@ import type { World } from "@engine/core/world.ts";
 import { Title } from "../title/Title.tsx";
 import { EnteringZone } from "../entering-zone/EnteringZone.tsx";
 import { Hud } from "../hud/Hud.tsx";
+import { DebugInfo } from "../debug-info/DebugInfo.tsx";
 
 interface GameUIProps {
   world: World;
@@ -31,8 +32,18 @@ export function GameUI({ world }: GameUIProps) {
     case "title":
       return <Title />;
     case "enteringZone":
-      return <EnteringZone zoneNumber={1} />;
+      return (
+        <>
+          <EnteringZone zoneNumber={1} />
+          <DebugInfo world={world} />
+        </>
+      );
     case "gameplay":
-      return <Hud />;
+      return (
+        <>
+          <Hud />
+          <DebugInfo world={world} />
+        </>
+      );
   }
 }

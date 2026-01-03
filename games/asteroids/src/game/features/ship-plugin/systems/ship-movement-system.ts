@@ -20,39 +20,46 @@ export class ShipMovementSystem {
     minY: -300,
     maxY: 300,
   };
-  private hasLoggedDimensions = false;
+  private lastCanvasWidth = 0;
+  private lastCanvasHeight = 0;
+
+  /**
+   * Calculate game world bounds based on camera FOV and canvas dimensions.
+   * Must be recalculated whenever canvas resizes.
+   */
+  private updateGameWorldBounds(width: number, height: number): void {
+    const aspectRatio = width / height;
+    
+    // Camera is 100 units away, FOV is 60 degrees
+    const vFOV = (60 * Math.PI) / 180; // convert to radians
+    const height_at_camera = 2 * Math.tan(vFOV / 2) * 100; // height of visible area
+    const width_at_camera = height_at_camera * aspectRatio;
+    
+    this.gameWorldBounds = {
+      minX: -width_at_camera / 2,
+      maxX: width_at_camera / 2,
+      minY: -height_at_camera / 2,
+      maxY: height_at_camera / 2,
+    };
+  }
 
   update(world: World, dt: number): void {
-    // Calculate game world bounds based on camera FOV and aspect ratio
-    // This ensures wrapping works correctly in world coordinates
-    if (!this.hasLoggedDimensions) {
-      const renderContext = world.getResource("render_context") as
-        | { width: number; height: number }
-        | undefined;
+    // Get render context and check if canvas was resized
+    const renderContext = world.getResource("render_context") as
+      | { width: number; height: number }
+      | undefined;
 
-      if (!renderContext) {
-        console.warn("[ShipMovementSystem] render_context resource not found");
-        return;
-      }
+    if (!renderContext) {
+      console.warn("[ShipMovementSystem] render_context resource not found");
+      return;
+    }
 
-      const width = renderContext.width;
-      const height = renderContext.height;
-      const aspectRatio = width / height;
-      
-      // Camera is 100 units away, FOV is 60 degrees
-      const vFOV = (60 * Math.PI) / 180; // convert to radians
-      const height_at_camera = 2 * Math.tan(vFOV / 2) * 100; // height of visible area
-      const width_at_camera = height_at_camera * aspectRatio;
-      
-      this.gameWorldBounds = {
-        minX: -width_at_camera / 2,
-        maxX: width_at_camera / 2,
-        minY: -height_at_camera / 2,
-        maxY: height_at_camera / 2,
-      };
-      
+    // Recalculate bounds if canvas size changed
+    if (renderContext.width !== this.lastCanvasWidth || renderContext.height !== this.lastCanvasHeight) {
+      this.updateGameWorldBounds(renderContext.width, renderContext.height);
+      this.lastCanvasWidth = renderContext.width;
+      this.lastCanvasHeight = renderContext.height;
       console.log(`[ShipMovementSystem] Game world bounds: X[${this.gameWorldBounds.minX.toFixed(1)}, ${this.gameWorldBounds.maxX.toFixed(1)}] Y[${this.gameWorldBounds.minY.toFixed(1)}, ${this.gameWorldBounds.maxY.toFixed(1)}]`);
-      this.hasLoggedDimensions = true;
     }
 
     // Query for all entities with Ship, Transform, and Velocity
