@@ -10,8 +10,43 @@ import type {
   SceneResumeEvent,
   SceneDisposeEvent,
   SceneResetEvent,
+  SceneTransitionProgressEvent,
+  SceneTransitionFinishedEvent,
 } from "../core/scene-events.ts";
 import { SCENE_EVENTS } from "../core/scene-events.ts";
+import type { EasingFunction } from "../utils/easing.ts";
+import { easeInOutQuad } from "../utils/easing.ts";
+
+/**
+ * Options for customizing scene transitions.
+ * Phase 5: Add Transition Options
+ */
+export interface TransitionOptions {
+  /** Duration of the transition in milliseconds (default: 0 for instant) */
+  duration?: number;
+  
+  /** Easing function to control acceleration/deceleration (default: easeInOutQuad) */
+  easing?: EasingFunction;
+  
+  /**
+   * Middleware hook called before transition starts.
+   * Useful for custom setup (e.g., fade out old scene).
+   */
+  onBefore?: (from: Scene | null, to: Scene) => Promise<void> | void;
+  
+  /**
+   * Middleware hook called during transition progress.
+   * Receives eased progress value (0-1).
+   * Useful for animations and UI updates.
+   */
+  onProgress?: (progress: number, easedProgress: number, elapsed: number, duration: number) => void;
+  
+  /**
+   * Middleware hook called after transition completes.
+   * Useful for cleanup or post-transition actions.
+   */
+  onAfter?: (from: Scene | null, to: Scene) => Promise<void> | void;
+}
 
 /**
  * Global resource for managing scene lifecycle and transitions.
@@ -26,6 +61,8 @@ import { SCENE_EVENTS } from "../core/scene-events.ts";
  * - "scene-resume" (SceneResumeEvent)
  * - "scene-dispose" (SceneDisposeEvent)
  * - "scene-reset" (SceneResetEvent)
+ * - "scene-transition-progress" (SceneTransitionProgressEvent)
+ * - "scene-transition-finished" (SceneTransitionFinishedEvent)
  */
 export class SceneManager {
   /** Currently active scene */
@@ -52,6 +89,21 @@ export class SceneManager {
 
   /** Whether to validate state transitions (Phase 2: Observable State) */
   private enableStateValidation: boolean = true;
+
+  /** Phase 5: Active transition animation ID (for cancellation) */
+  private transitionAnimationId: number | null = null;
+
+  /** Phase 5: Timestamp of current transition start */
+  private transitionStartTime: number | null = null;
+
+  /** Phase 5: Current transition options */
+  private currentTransitionOptions: TransitionOptions | null = null;
+
+  /** Phase 5: Scene being transitioned to (for custom transitions) */
+  private transitioningToScene: Scene | null = null;
+
+  /** Phase 5: Scene being transitioned from (for custom transitions) */
+  private transitioningFromScene: Scene | null = null;
 
   /**
    * Load a new scene, replacing the current scene.
@@ -198,6 +250,211 @@ export class SceneManager {
         );
       }
     }
+  }
+
+  /**
+   * Phase 5: Transition to a new scene with custom transition options.
+   * 
+   * Supports:
+   * - Duration: How long the transition takes in milliseconds
+   * - Easing: Animation curve (linear, easeInOutQuad, easeInBounce, etc.)
+   * - Middleware hooks: onBefore, onProgress, onAfter callbacks
+   * 
+   * If duration is 0 or not specified, uses instant transition (like loadScene).
+   * 
+   * @param scene - The scene to transition to
+   * @param options - Transition configuration options
+   * 
+   * @example
+   * ```typescript
+   * // Fade transition over 1 second
+   * sceneManager.transitionToScene(newScene, {
+   *   duration: 1000,
+   *   easing: easeInOutQuad,
+   *   onProgress: (progress, eased, elapsed, duration) => {
+   *     // Update fade effect: alpha = 1 - eased
+   *   }
+   * });
+   * 
+   * // Transition with middleware
+   * sceneManager.transitionToScene(newScene, {
+   *   duration: 500,
+   *   onBefore: async (from, to) => {
+   *     // Fade out music, pause systems
+   *     audioManager.fadeOut(500);
+   *   },
+   *   onAfter: async (from, to) => {
+   *     // Start music, resume gameplay
+   *     audioManager.fadeIn(500);
+   *   }
+   * });
+   * ```
+   */
+  transitionToScene(scene: Scene, options?: TransitionOptions): void {
+    // Cancel any existing transition
+    if (this.transitionAnimationId !== null) {
+      globalThis.clearTimeout(this.transitionAnimationId);
+      this.transitionAnimationId = null;
+    }
+
+    const oldScene = this.currentScene;
+    
+    // If no duration specified, use instant transition
+    if (!options?.duration || options.duration <= 0) {
+      this.loadScene(scene);
+      return;
+    }
+
+    // Store transition state
+    this.currentTransitionOptions = options;
+    this.transitioningFromScene = oldScene;
+    this.transitioningToScene = scene;
+    this.transitionStartTime = Date.now();
+
+    // Emit transition start event
+    if (this.world) {
+      this.world.emitEvent<SceneTransitionStartEvent>(
+        SCENE_EVENTS.TRANSITION_START,
+        {
+          from: oldScene,
+          to: scene,
+          transitionType: "load",
+          timestamp: this.transitionStartTime,
+        }
+      );
+    }
+
+    // Call onBefore middleware
+    const beforePromise = options.onBefore?.(oldScene, scene) ?? Promise.resolve();
+    
+    Promise.resolve(beforePromise)
+      .then(() => {
+        // Start animation frame loop for transition progress
+        this._animateTransition(scene, oldScene, options);
+      })
+      .catch((error) => {
+        console.error("[SceneManager] Error in transition onBefore:", error);
+        // Still proceed with transition on error
+        this._animateTransition(scene, oldScene, options);
+      });
+  }
+
+  /**
+   * Phase 5: Internal method to animate transition progress.
+   * @internal
+   */
+  private _animateTransition(
+    toScene: Scene,
+    fromScene: Scene | null,
+    options: TransitionOptions
+  ): void {
+    const duration = options.duration ?? 0;
+    const easing = options.easing ?? easeInOutQuad;
+    const startTime = this.transitionStartTime ?? Date.now();
+    const frameTime = 1000 / 60; // Target 60 FPS
+
+    const animate = () => {
+      const now = Date.now();
+      const elapsed = now - startTime;
+      const rawProgress = Math.min(elapsed / duration, 1);
+      const easedProgress = easing(rawProgress);
+
+      // Emit progress event
+      if (this.world) {
+        this.world.emitEvent<SceneTransitionProgressEvent>(
+          SCENE_EVENTS.TRANSITION_PROGRESS,
+          {
+            from: fromScene,
+            to: toScene,
+            progress: rawProgress,
+            easedProgress,
+            duration,
+            elapsed,
+            timestamp: now,
+          }
+        );
+      }
+
+      // Call onProgress callback
+      options.onProgress?.(rawProgress, easedProgress, elapsed, duration);
+
+      // Check if transition is complete
+      if (rawProgress >= 1) {
+        this._completeTransition(toScene, fromScene, options);
+      } else {
+        // Continue animation using setTimeout (works in Node.js/Deno/Browser)
+        this.transitionAnimationId = globalThis.setTimeout(animate, frameTime) as unknown as number;
+      }
+    };
+
+    // Start the animation loop using setTimeout instead of requestAnimationFrame
+    // This works in both browser and Node.js environments
+    this.transitionAnimationId = globalThis.setTimeout(animate, frameTime) as unknown as number;
+  }
+
+  /**
+   * Phase 5: Internal method to complete the transition.
+   * @internal
+   */
+  private _completeTransition(
+    toScene: Scene,
+    fromScene: Scene | null,
+    options: TransitionOptions
+  ): void {
+    this.transitionAnimationId = null;
+    this.currentTransitionOptions = null;
+
+    // Emit transition finished event
+    if (this.world && this.transitionStartTime) {
+      const duration = Date.now() - this.transitionStartTime;
+      this.world.emitEvent<SceneTransitionFinishedEvent>(
+        SCENE_EVENTS.TRANSITION_FINISHED,
+        {
+          from: fromScene,
+          to: toScene,
+          duration,
+          timestamp: Date.now(),
+        }
+      );
+    }
+
+    // Load the scene (this handles all the standard lifecycle)
+    this.loadScene(toScene);
+
+    // Call onAfter middleware
+    const afterPromise = options.onAfter?.(fromScene, toScene) ?? Promise.resolve();
+    Promise.resolve(afterPromise).catch((error) => {
+      console.error("[SceneManager] Error in transition onAfter:", error);
+      // Don't re-throw; we've already logged the error
+    });
+
+    this.transitionStartTime = null;
+    this.transitioningFromScene = null;
+    this.transitioningToScene = null;
+  }
+
+  /**
+   * Phase 5: Cancel any active transition animation.
+   * Returns true if a transition was cancelled, false otherwise.
+   */
+  cancelTransition(): boolean {
+    if (this.transitionAnimationId !== null) {
+      globalThis.clearTimeout(this.transitionAnimationId);
+      this.transitionAnimationId = null;
+      this.currentTransitionOptions = null;
+      this.transitionStartTime = null;
+      this.transitioningFromScene = null;
+      this.transitioningToScene = null;
+      return true;
+    }
+    return false;
+  }
+
+  /**
+   * Phase 5: Check if a transition is currently in progress.
+   */
+  isTransitioning(): boolean {
+    return this.transitionAnimationId !== null;
   }
 
   /**

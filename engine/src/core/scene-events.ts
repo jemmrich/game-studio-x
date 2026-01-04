@@ -119,6 +119,42 @@ export interface SceneErrorEvent {
 }
 
 /**
+ * Event emitted when a custom transition starts (Phase 5).
+ * Fired when transitionToScene() is called with transition options.
+ */
+export interface SceneTransitionProgressEvent {
+  /** The scene being transitioned from */
+  from: Scene | null;
+  /** The scene being transitioned to */
+  to: Scene;
+  /** Progress value from 0 to 1 */
+  progress: number;
+  /** Eased progress value (after easing function applied) */
+  easedProgress: number;
+  /** Duration of the transition in milliseconds */
+  duration: number;
+  /** Elapsed time since transition started in milliseconds */
+  elapsed: number;
+  /** Timestamp of the event */
+  timestamp: number;
+}
+
+/**
+ * Event emitted when a custom transition completes (Phase 5).
+ * Fired when transitionToScene() transition options animation finishes.
+ */
+export interface SceneTransitionFinishedEvent {
+  /** The scene being transitioned from */
+  from: Scene | null;
+  /** The scene now active */
+  to: Scene;
+  /** Total duration of the transition in milliseconds */
+  duration: number;
+  /** Timestamp when transition finished */
+  timestamp: number;
+}
+
+/**
  * Type definition for all scene-related events.
  * Used for type-safe event emission and listening.
  */
@@ -131,7 +167,9 @@ export type SceneEvent =
   | SceneResumeEvent
   | SceneDisposeEvent
   | SceneResetEvent
-  | SceneErrorEvent;
+  | SceneErrorEvent
+  | SceneTransitionProgressEvent
+  | SceneTransitionFinishedEvent;
 
 /**
  * Event names (keys) for scene events.
@@ -140,6 +178,8 @@ export type SceneEvent =
 export const SCENE_EVENTS = {
   TRANSITION_START: "scene-transition-start",
   TRANSITION_COMPLETE: "scene-transition-complete",
+  TRANSITION_PROGRESS: "scene-transition-progress",
+  TRANSITION_FINISHED: "scene-transition-finished",
   LOAD: "scene-load",
   UNLOAD: "scene-unload",
   PAUSE: "scene-pause",
