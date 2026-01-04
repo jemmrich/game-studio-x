@@ -431,11 +431,10 @@ export class SceneManager {
    * 
    * Valid transitions:
    * - Unloaded → Loading
-   * - Loading → Active
-   * - Active → Unloading
-   * - Active → Loading (replacing scene)
-   * - Unloading → Unloaded
-   * - Any state → Error (special case)
+   * - Loading → Active, Unloaded
+   * - Active → Unloading, Loading, Paused, Unloaded (when popping last scene)
+   * - Paused → Active
+   * - Unloading → Unloaded, Active, Loading
    * 
    * @throws {Error} If transition is invalid
    */
@@ -445,7 +444,7 @@ export class SceneManager {
     const validTransitions: Record<SceneState, SceneState[]> = {
       [SceneState.Unloaded]: [SceneState.Loading],
       [SceneState.Loading]: [SceneState.Active, SceneState.Unloaded],
-      [SceneState.Active]: [SceneState.Unloading, SceneState.Loading, SceneState.Paused],
+      [SceneState.Active]: [SceneState.Unloading, SceneState.Loading, SceneState.Paused, SceneState.Unloaded],
       [SceneState.Paused]: [SceneState.Active],
       [SceneState.Unloading]: [SceneState.Unloaded, SceneState.Active, SceneState.Loading],
     };

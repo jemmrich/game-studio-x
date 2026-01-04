@@ -11,7 +11,7 @@
 | Phase 1: Event System | ✅ **COMPLETE** | [2026-01-05-techdebt-scene-manager-phase1-complete.md](2026-01-05-techdebt-scene-manager-phase1-complete.md) |
 | Phase 2: Observable State | ✅ **COMPLETE** | [2026-01-05-techdebt-scene-manager-phase2-complete.md](2026-01-05-techdebt-scene-manager-phase2-complete.md) |
 | Phase 3: Unified Lifecycle | ✅ **COMPLETE** | [2026-01-05-techdebt-scene-manager-phase3-complete.md](2026-01-05-techdebt-scene-manager-phase3-complete.md) |
-| Phase 4: Stack Documentation | ⏳ Planned | — |
+| Phase 4: Stack Documentation | ✅ **COMPLETE** | [2026-01-05-techdebt-scene-manager-phase4-complete.md](2026-01-05-techdebt-scene-manager-phase4-complete.md) |
 | Phase 5: Transition Options | ⏳ Planned | — |
 
 ## Overview
@@ -358,7 +358,7 @@ popScene(world?: any): void {
 
 ## Proposed Solutions
 
-### Phase 1: Implement Event System for Scene Manager (complete)
+### Phase 1: Implement Event System for Scene Manager ✅ **COMPLETE**
 
 Create a unified event system that integrates with World's event bus:
 
@@ -453,7 +453,7 @@ function GameUI({ sceneManager }) {
 - All subscription tests passing
 - All integration tests passing
 
-### Phase 3: Unify Lifecycle Management
+### Phase 3: Unify Lifecycle Management ✅ **COMPLETE**
 
 Consolidate SceneManager and SceneLifecycleSystem logic:
 
@@ -462,14 +462,25 @@ Consolidate SceneManager and SceneLifecycleSystem logic:
 - Explicit state transition rules
 - World injection handled automatically
 
-### Phase 4: Document and Test Scene Stack
+### Phase 4: Document and Test Scene Stack ✅ **COMPLETE**
 
 Clarify semantics of scene stack (pausing, resuming, multiple pushes):
 
-- Clear documentation of pause/resume behavior
-- Comprehensive tests for stack operations
-- API to query stack state
+- Query APIs for scene stack: `getStackDepth()`, `getSceneStack()`, `getTotalSceneCount()`, `isScenePaused()`
+- Comprehensive tests for stack operations (40+ tests)
+- Documentation of pause/resume behavior and stack semantics
 - Examples of menu-on-top-of-gameplay patterns
+- State machine integration explained
+
+**Deliverables:**
+- ✅ Query APIs implemented and documented
+- ✅ 40+ new tests covering all stack operations
+- ✅ Comprehensive [scene-stack.md](../specs/scene-stack.md) documentation
+- ✅ Common patterns with code examples
+- ✅ Edge cases documented
+- ✅ Performance analysis included
+
+**Test Results:** 40/40 tests passing ✅
 
 ### Phase 5: Add Transition Options
 
@@ -516,26 +527,25 @@ A successful refactor would allow:
 | Phase 1 (Event System) | 2-3 days | ✅ Complete | ~2 days |
 | Phase 2 (Observable State) | 2-3 days | ✅ Complete | ~1 day |
 | Phase 3 (Unify Lifecycle) | 3-4 days | ✅ Complete | ~3.5 hours |
-| Phase 4 (Document & Test Stack) | 1-2 days | ⏳ Planned | — |
+| Phase 4 (Document & Test Stack) | 1-2 days | ✅ Complete | ~4.5 hours |
 | Phase 5 (Transition Options) | 2-3 days | ⏳ Planned | — |
 | Integration & Testing | 2-3 days | ⏳ Planned | — |
 
-**Total So Far:** ~3.5 days  
-**Total Remaining:** ~10-15 days  
-**Total Estimate:** 12-18 days for complete refactor
-
-Note: Phase 3 was much faster than estimated (3.5 hours vs 3-4 days) because Phases 1 and 2 had already set up the proper event and state infrastructure.
+**Total So Far:** ~4 days  
+**Total Remaining:** ~10-15 days (optional Phase 5)  
+**Total Estimate:** 14-19 days for complete refactor (with Phase 5)
 
 ## Implementation Status
 
-### ✅ **Phases 1, 2 & 3 Complete!**
+### ✅ **Phases 1, 2, 3 & 4 Complete!**
 
-All three core phases have been successfully implemented:
+All four core phases have been successfully implemented:
 - **Phase 1:** Unified event system through World's event bus
 - **Phase 2:** Observable state with validation and subscriptions
 - **Phase 3:** Unified lifecycle management with SceneManager as single source of truth
+- **Phase 4:** Scene stack fully documented and tested with query APIs
 
-These three phases achieve the core goals of the tech debt fix:
+These four phases achieve the core goals of the tech debt fix:
 1. ✅ UI can observe scene state with simple subscriptions
 2. ✅ All scene lifecycle events in unified event bus
 3. ✅ State machine validated and explicit
@@ -544,10 +554,12 @@ These three phases achieve the core goals of the tech debt fix:
 6. ✅ Clear responsibility separation (Manager vs System)
 7. ✅ No regression in existing functionality
 8. ✅ Type-safe (no `null as any` hacks)
+9. ✅ Scene stack is well-documented with 40+ tests
+10. ✅ Query APIs for inspecting scene stack
 
-### 🎯 Recommended Next: Phase 4 (Stack Documentation)
+### 🎯 Recommended Next: Phase 5 (Optional)
 
-Phase 4 is the natural continuation, adding documentation and query APIs for scene stack operations.
+Phase 5 can add transition animations and custom transition logic, but the core scene manager is production-ready.
 
 ## Implementation Priority
 
