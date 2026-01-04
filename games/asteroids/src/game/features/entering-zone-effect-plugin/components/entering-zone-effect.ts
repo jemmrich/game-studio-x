@@ -15,4 +15,6 @@ export class EnteringZoneEffectComponent {
   particleSpread = 0;
   acceleration = 0;
   fadeOutStart = 0;
+  audioElement: HTMLAudioElement | null = null; // For fading warp sound
+  maxAudioVolume = 0.7; // Maximum volume for the audio
 }

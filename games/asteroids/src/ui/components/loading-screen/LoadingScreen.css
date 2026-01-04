@@ -68,6 +68,7 @@
   color: #888;
   text-align: center;
   min-height: 1.5rem;
+  display: none;
 }
 
 /* Responsive design */

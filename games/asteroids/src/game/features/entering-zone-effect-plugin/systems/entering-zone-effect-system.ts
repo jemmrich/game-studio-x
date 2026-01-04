@@ -1,6 +1,7 @@
 import type { World } from "@engine/core/world.ts";
 import * as THREE from "three";
 import { EnteringZoneEffectComponent } from "../components/entering-zone-effect.ts";
+import { AudioSystem } from "../../../systems/audio-system.ts";
 
 interface WorldEvent {
   type: string;
@@ -110,12 +111,36 @@ export class EnteringZoneEffectSystem {
         // console.log(`[EnteringZoneEffect] Progress: ${(progress * 100).toFixed(1)}% | Elapsed: ${elapsed.toFixed(0)}ms / ${effect.duration}ms | Opacity: ${opacity}`);
       }
 
+      // Update audio volume with fade in/out
+      if (effect.audioElement && !effect.audioElement.paused) {
+        let volumeFactor = 1.0;
+        
+        // Fade in during first 20% of animation
+        if (progress < FADE_IN_END) {
+          volumeFactor = progress / FADE_IN_END;
+        }
+        // Fade out during last 30% of animation
+        else if (progress > FADE_OUT_START) {
+          volumeFactor = 1.0 - ((progress - FADE_OUT_START) / (FADE_OUT_END - FADE_OUT_START));
+        }
+        
+        effect.audioElement.volume = effect.maxAudioVolume * volumeFactor;
+      }
+
       // Update particle positions and opacity
       this.updateParticleEffect(effect, progress);
 
       // Check if animation is complete
       if (progress >= 1) {
         console.log("[EnteringZoneEffect] Animation complete");
+        
+        // Stop and cleanup audio
+        if (effect.audioElement) {
+          effect.audioElement.pause();
+          effect.audioElement.currentTime = 0;
+          effect.audioElement = null;
+        }
+        
         // Clean up
         if (effect.particleMesh) {
           this.threeScene.remove(effect.particleMesh);
@@ -152,6 +177,9 @@ export class EnteringZoneEffectSystem {
     try {
       const zoneNumber = event.data.zoneNumber as number;
 
+      // Play warp sound with fade control
+      const audioElement = AudioSystem.playSoundWithFade(world, 'warp', 0.0);
+
       // Create effect entity
       const entity = world.createEntity();
 
@@ -173,6 +201,8 @@ export class EnteringZoneEffectSystem {
       effect.particleSpread = this.config.particleSpread;
       effect.acceleration = this.config.acceleration;
       effect.fadeOutStart = this.config.fadeOutStart;
+      effect.audioElement = audioElement;
+      effect.maxAudioVolume = 0.7;
 
       // Attach component to entity
       world.add(entity, effect);

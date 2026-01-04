@@ -41,6 +41,41 @@ export class AudioSystem {
   }
 
   /**
+   * Play a sound effect with fade control
+   * Returns the audio element for manual volume control
+   * @param world - The game world
+   * @param soundId - The ID of the sound registered in AssetLoader
+   * @param volume - Initial volume level (0.0 to 1.0)
+   * @returns The audio element or null if failed
+   */
+  static playSoundWithFade(world: World, soundId: string, volume = 1.0): HTMLAudioElement | null {
+    const assetLoader = world.getResource<AssetLoader>("assetLoader");
+    
+    if (!assetLoader) {
+      console.warn("[AudioSystem] AssetLoader not found in world resources");
+      return null;
+    }
+
+    const audioElement = assetLoader.getAudio(soundId);
+    
+    if (!audioElement) {
+      console.warn(`[AudioSystem] Audio '${soundId}' not found`);
+      return null;
+    }
+
+    // Clone the audio element so multiple instances can play simultaneously
+    const sound = audioElement.cloneNode(true) as HTMLAudioElement;
+    sound.volume = volume;
+    
+    // Play the sound
+    sound.play().catch((error) => {
+      console.error(`[AudioSystem] Failed to play sound '${soundId}':`, error);
+    });
+
+    return sound;
+  }
+
+  /**
    * Play background music on loop
    * @param world - The game world
    * @param musicId - The ID of the music registered in AssetLoader
