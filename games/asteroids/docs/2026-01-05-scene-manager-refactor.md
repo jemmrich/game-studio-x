@@ -2,12 +2,199 @@
 
 **Date:** 2026-01-05  
 **Scope:** Utilize Engine Phase 1-4 improvements to improve game architecture  
-**Status:** Planning  
+**Status:** Phase 2 In Progress  
 **Priority:** High (reduces code complexity, improves maintainability)
 
 ## Overview
 
 The asteroids game currently relies on event-based state management for UI transitions. While functional, this approach is difficult to reason about and creates tight coupling between game logic and UI rendering. This refactor will leverage the engine's new observable scene state, unified event system, and scene stack capabilities to create a cleaner, more maintainable architecture.
+
+## Phase 1: Complete ✅
+
+**Date Completed:** 2026-01-05  
+**Time Invested:** ~2 hours  
+**Build Status:** ✓ Compiles successfully (vite build)
+
+### What Was Completed
+
+Created explicit scene classes that map to game states:
+
+1. **TitleScene** (`src/game/scenes/title-scene.ts`)
+   - Enhanced with comprehensive JSDoc documentation
+   - Displays title screen with animated asteroids
+   - Manages background music and keyboard input
+   - Transitions to GameplayScene on user input
+
+2. **GameplayScene** (`src/game/scenes/gameplay.ts`)
+   - Enhanced to handle wave manager coordination
+   - Spawns player ship and initializes gameplay
+   - Listens for wave transitions
+   - **NEW:** Pushes `EnteringZoneScene` onto scene stack when wave completes
+   - Properly manages event listeners and cleanup
+
+3. **EnteringZoneScene** (`src/game/scenes/entering-zone-scene.ts`) - NEW
+   - Creates overlay scene for wave transitions
+   - Automatically pops from scene stack after effect duration
+   - Tracks wave number for UI display
+   - Fully self-contained lifecycle (no external event needed)
+   - Provides progress tracking (`getProgress()`, `getElapsedTime()`)
+
+4. **Scenes Module** (`src/game/scenes/mod.ts`) - NEW
+   - Central index for all game scenes
+   - Exports TitleScene, GameplayScene, EnteringZoneScene
+   - Documents scene architecture and design decisions
+   - Lists future extensibility examples
+
+### Key Improvements
+
+- **Type Safety:** All scenes are explicit TypeScript classes (no magic strings)
+- **Clear Lifecycle:** Each scene has init(), pause(), resume(), dispose() methods
+- **Better Documentation:** Comprehensive JSDoc comments in all scenes
+- **Self-Contained:** Scenes manage their own resources and cleanup
+- **Scene Stack Support:** GameplayScene can now push EnteringZoneScene for transitions
+- **Future Ready:** Architecture supports easy addition of pause menus, settings screens, etc.
+
+### Architecture Highlights
+
+```
+Game Scenes:
+├── TitleScene (asteroids-title)
+│   └── Entry point, decorative asteroids, music management
+├── GameplayScene (asteroids-main)
+│   └── Player, asteroids, waves, coordinates transitions
+└── EnteringZoneScene (asteroids-entering-zone)
+    └── Wave transition overlay, auto-pop after duration
+
+Scene Stack During Transitions:
+[EnteringZoneScene]    ← Current (top of stack, paused=true)
+[GameplayScene]        ← Underneath (paused by stack)
+```
+
+### Files Changed
+
+- **Created:** `src/game/scenes/entering-zone-scene.ts`
+- **Created:** `src/game/scenes/mod.ts`
+- **Enhanced:** `src/game/scenes/title-scene.ts` (added documentation)
+- **Enhanced:** `src/game/scenes/gameplay.ts` (added onEnteringZone method)
+- **Updated:** `src/main.tsx` (import from scenes/mod.ts)
+
+## Phase 2: Complete ✅
+
+**Date Completed:** 2026-01-05  
+**Time Invested:** ~1.5 hours  
+**Build Status:** ✓ Compiles successfully (vite build)
+
+### What Was Completed
+
+Replaced manual view state and event listeners with observable scene state:
+
+1. **useSceneState Hook** (`src/hooks/useSceneState.ts`) - NEW
+   - Custom React hook that observes SceneManager state changes
+   - Gets initial scene on mount via `getCurrentScene()`
+   - Subscribes to scene state changes via `subscribeToStateChanges()`
+   - Automatically unsubscribes on unmount
+   - Returns current Scene or null
+
+2. **Refactored GameUI Component** (`src/ui/components/game-ui/GameUI.tsx`)
+   - Removed 3 separate event listeners (scene-transition, entering_zone, entering_zone_effect_complete)
+   - Removed 2 local state variables (currentView, waveNumber)
+   - Replaced with single `useSceneState()` hook
+   - Added `renderScene()` helper function with clean switch statement
+   - Scene IDs are now typed ("asteroids-title", "asteroids-main", "asteroids-entering-zone")
+   - Wave number is queried on-demand from WaveManager when needed
+   - Added fallback UI for unknown scenes
+
+3. **Updated App Component** (`src/main.tsx`)
+   - Now gets SceneManager from world resources
+   - Passes SceneManager to GameUI component
+   - SceneManager stays in sync with scene state
+
+### Key Improvements
+
+- **Eliminated Local State:** GameUI no longer maintains currentView/waveNumber state (0 local vars → 0)
+- **Removed Event Listeners:** From 3 separate event handlers down to 0 (hook handles all)
+- **Single Source of Truth:** Scene state comes entirely from SceneManager
+- **Type-Safe Rendering:** Scene IDs are strings (but properly scoped to "asteroids-*" namespace)
+- **Cleaner Logic:** Simple switch statement instead of complex effect hooks
+- **On-Demand Queries:** Wave number fetched when displaying, not synchronized
+- **Better Separation:** Game logic (scenes) separate from UI logic (hook)
+
+### Architecture Changes
+
+**Before (Event-Driven):**
+```tsx
+// 3 Event Listeners
+world.onEvent("scene-transition", ...)
+world.onEvent("entering_zone", ...)
+world.onEvent("entering_zone_effect_complete", ...)
+
+// 2 State Variables
+const [currentView, setCurrentView] = useState(...)
+const [waveNumber, setWaveNumber] = useState(...)
+
+// Complex useEffect with implicit ordering
+useEffect(() => {
+  // 3 listener setup
+}, [world])
+
+// Manual state updates scattered in listeners
+```
+
+**After (Scene-Based):**
+```tsx
+// 1 Hook (handles all state)
+const currentScene = useSceneState(sceneManager)
+
+// 0 Local State Variables
+// (all state comes from scene)
+
+// Simple switch statement
+switch (currentScene?.id) {
+  case "asteroids-title": ...
+  case "asteroids-main": ...
+  case "asteroids-entering-zone": ...
+}
+
+// On-demand queries
+const waveNumber = waveManager?.currentWaveNumber ?? 1
+```
+
+### Code Metrics
+
+**GameUI Component:**
+- Before: ~70 lines (with 3 event listeners, 2 state vars, complex useEffect)
+- After: ~90 lines (with cleaner structure, better documentation, renderScene helper)
+- Event listeners: 3 → 0 (-100%)
+- Local state variables: 2 → 0 (-100%)
+- useEffect hooks: 1 complex → 0 (logic moved to hook)
+
+**New useSceneState Hook:**
+- 53 lines of well-documented code
+- Handles all scene observation logic
+- Reusable across the entire game codebase
+
+### Files Changed
+
+- **Created:** `src/hooks/useSceneState.ts`
+- **Refactored:** `src/ui/components/game-ui/GameUI.tsx` (completely rewritten)
+- **Updated:** `src/main.tsx` (App component to pass sceneManager)
+
+### Integration Points
+
+1. **SceneManager → useSceneState Hook:**
+   - Hook calls `getCurrentScene()` on mount
+   - Hook subscribes to `subscribeToStateChanges()`
+   - Returns current Scene to React component
+
+2. **GameUI → Scene Rendering:**
+   - Scene.id used for switch statement (type-safe mapping)
+   - Each scene maps to specific UI components
+   - No more magic string event names
+
+3. **Wave Number Resolution:**
+   - GameUI queries WaveManager only when needed
+   - No duplicate state synchronization
+   - Uses current value at render time
 
 ## Current Architecture Issues
 

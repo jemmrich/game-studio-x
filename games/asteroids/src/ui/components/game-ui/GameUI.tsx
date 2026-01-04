@@ -1,6 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import type { World } from "@engine/core/world.ts";
+import type { Scene } from "@engine/core/scene.ts";
+import type { SceneManager } from "@engine/resources/scene-manager.ts";
 import type { WaveManager } from "../../../game/resources/wave-manager.ts";
+import { useSceneState } from "../../../hooks/useSceneState.ts";
 import { Title } from "../title/Title.tsx";
 import { EnteringZone } from "../entering-zone/EnteringZone.tsx";
 import { Hud } from "../hud/Hud.tsx";
@@ -9,56 +12,88 @@ import { LoadingScreen } from "../loading-screen/LoadingScreen.tsx";
 
 interface GameUIProps {
   world: World;
+  sceneManager: SceneManager;
   isLoading: boolean;
   loadProgress: number;
   currentAsset: string | null;
 }
 
-export function GameUI({ world, isLoading, loadProgress, currentAsset }: GameUIProps) {
-  const [currentView, setCurrentView] = useState<"title" | "gameplay" | "enteringZone">("title");
-  const [waveNumber, setWaveNumber] = useState(1);
+/**
+ * GameUI - Main UI component
+ *
+ * Manages the display of different game views based on the current scene.
+ * Uses the useSceneState hook to observe scene changes and react accordingly.
+ *
+ * Architecture:
+ * - Scene state is the single source of truth (no local state variables)
+ * - No event listeners for scene transitions (all handled by hook)
+ * - Clear switch statement for rendering based on current scene
+ * - Wave number is queried from WaveManager when needed
+ *
+ * Scene Flow:
+ * - TitleScene → shows Title component
+ * - GameplayScene → shows Hud + DebugInfo
+ * - EnteringZoneScene → shows EnteringZone effect + DebugInfo
+ */
+export function GameUI({ world, sceneManager, isLoading, loadProgress, currentAsset }: GameUIProps) {
+  // Observable scene state - single source of truth
+  const currentScene = useSceneState(sceneManager);
 
-  // Setup event listeners once the component mounts (regardless of loading state)
+  // Show loading screen while assets load
   useEffect(() => {
-    // Listen for scene transitions
-    world.onEvent("scene-transition", (event) => {
-      console.warn(`[GameUI] Scene transition to view: ${event.data.view}`);
-      setCurrentView(event.data.view);
-    });
+    if (isLoading) {
+      console.log(`[GameUI] Loading: ${loadProgress}% (${currentAsset})`);
+    }
+  }, [isLoading, loadProgress, currentAsset]);
 
-    world.onEvent("entering_zone", () => {
-      // Get the current wave number from WaveManager
-      const waveManager = world.getResource<WaveManager>("waveManager");
-      setWaveNumber(waveManager?.currentWaveNumber ?? 1);
-      setCurrentView("enteringZone");
-    });
-
-    world.onEvent("entering_zone_effect_complete", () => {
-      setCurrentView("gameplay");
-    });
-  }, [world]);
-
-  // Show loading screen if assets are still loading
   if (isLoading) {
     return <LoadingScreen progress={loadProgress} currentAsset={currentAsset} />;
   }
 
-  switch (currentView) {
-    case "title":
+  // Render based on current scene
+  return renderScene(currentScene, world, sceneManager);
+}
+
+/**
+ * Render the appropriate UI based on the current scene
+ *
+ * This function handles the scene-to-view mapping:
+ * - "asteroids-title" → TitleScene
+ * - "asteroids-main" → GameplayScene
+ * - "asteroids-entering-zone" → EnteringZoneScene
+ */
+function renderScene(currentScene: Scene | null, world: World, sceneManager: SceneManager) {
+  if (!currentScene) {
+    return <div className="no-scene">No active scene</div>;
+  }
+
+  switch (currentScene.id) {
+    case "asteroids-title":
       return <Title />;
-    case "enteringZone":
-      return (
-        <>
-          <EnteringZone zoneNumber={waveNumber} />
-          <DebugInfo world={world} />
-        </>
-      );
-    case "gameplay":
+
+    case "asteroids-main":
       return (
         <>
           <Hud world={world} />
           <DebugInfo world={world} />
         </>
       );
+
+    case "asteroids-entering-zone":
+      // Query wave number from WaveManager for display
+      const waveManager = world.getResource<WaveManager>("waveManager");
+      const waveNumber = waveManager?.currentWaveNumber ?? 1;
+
+      return (
+        <>
+          <EnteringZone zoneNumber={waveNumber} />
+          <DebugInfo world={world} />
+        </>
+      );
+
+    default:
+      // Fallback for unknown scenes
+      console.warn(`[GameUI] Unknown scene: ${currentScene.id}`);
+      return <div className="unknown-scene">Unknown scene: {currentScene.id}</div>;
   }
 }

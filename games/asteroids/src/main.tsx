@@ -10,7 +10,7 @@ import {
 import {
   installRenderPlugin,
 } from "@engine/features/render-plugin/mod.ts";
-import { TitleScene } from "./game/scenes/title-scene.ts";
+import { TitleScene } from "./game/scenes/mod.ts";
 import { RendererSystem } from "./game/systems/renderer-system.ts";
 import { RenderContext } from "./game/resources/render-context.ts";
 import { PauseState } from "./game/resources/pause-state.ts";
@@ -31,6 +31,7 @@ function App() {
   const [loadProgress, setLoadProgress] = useState(0);
   const [currentAsset, setCurrentAsset] = useState<string | null>(null);
   const [world] = useState(() => new World());
+  const [sceneManager] = useState(() => world.getResource<SceneManager>("sceneManager") || new SceneManager());
 
   // Initialize asset loading on mount
   useState(() => {
@@ -40,7 +41,8 @@ function App() {
   return (
     <StrictMode>
       <GameUI 
-        world={world} 
+        world={world}
+        sceneManager={sceneManager}
         isLoading={isLoading}
         loadProgress={loadProgress}
         currentAsset={currentAsset}

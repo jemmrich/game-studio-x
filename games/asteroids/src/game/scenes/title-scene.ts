@@ -9,6 +9,23 @@ import { GameplayScene } from "./gameplay.ts";
 import { AudioSystem } from "../systems/audio-system.ts";
 import * as THREE from "three";
 
+/**
+ * TitleScene - Main menu and title screen
+ *
+ * This scene displays the title screen with animated asteroids in the background.
+ * It serves as the entry point to the game and transitions to GameplayScene when
+ * the user presses any key.
+ *
+ * Features:
+ * - Spawns 30 asteroids of mixed sizes for visual effect
+ * - Manages background music (starts on user interaction per browser autoplay policy)
+ * - Listens for keyboard input to transition to gameplay
+ * - Emits scene-transition events for UI to react to scene changes
+ *
+ * Scene Lifecycle:
+ * - init(): Spawn asteroids and set up keyboard listener
+ * - dispose(): Stop music and clean up asteroids
+ */
 export class TitleScene extends BaseScene {
   private threeJsScene: THREE.Scene;
   private keyListenerAdded = false;
@@ -20,6 +37,11 @@ export class TitleScene extends BaseScene {
     this.threeJsScene = threeJsScene;
   }
 
+  /**
+   * Initialize the title scene
+   *
+   * Spawns decorative asteroids and sets up input handling
+   */
   init(world: World): void {
     // NOTE: All plugins are already installed in main.tsx
     // This scene just spawns asteroids for visual effect
@@ -97,8 +119,10 @@ export class TitleScene extends BaseScene {
 
     // Note: Title scene doesn't need destruction system - it just displays animated asteroids
 
-    // Set up keyboard listener to switch to gameplay on any key press
-    // Also start background music on first interaction (browsers require user interaction for audio)
+    /**
+     * Set up keyboard listener to switch to gameplay on any key press
+     * Also start background music on first interaction (browsers require user interaction for audio)
+     */
     if (!this.keyListenerAdded) {
       this.setupKeyboardListener(world);
       this.keyListenerAdded = true;
@@ -124,6 +148,15 @@ export class TitleScene extends BaseScene {
     }
   }
 
+  /**
+   * Handle keyboard input to transition to gameplay
+   *
+   * When the user presses any key:
+   * 1. Stop background music
+   * 2. Emit scene-transition event (for UI)
+   * 3. Load GameplayScene via SceneManager
+   * 4. Remove keyboard listener
+   */
   private setupKeyboardListener(world: World): void {
     const handleKeyPress = () => {
       // Stop background music
@@ -144,6 +177,13 @@ export class TitleScene extends BaseScene {
     globalThis.addEventListener("keydown", handleKeyPress);
   }
 
+  /**
+   * Clean up title scene resources
+   *
+   * - Stop background music if still playing
+   * - Remove all spawned asteroids
+   * - Base class cleanup of tagged entities
+   */
   dispose(world: World): void {
     // Stop background music if still playing
     if (this.backgroundMusic) {

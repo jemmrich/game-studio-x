@@ -1,6 +1,7 @@
 import { BaseScene } from "@engine/core/base-scene.ts";
 import type { World } from "@engine/core/world.ts";
 import type { GUID } from "@engine/utils/guid.ts";
+import { SceneManager } from "@engine/resources/scene-manager.ts";
 import {
   spawnPlayerShip,
   type ShipPluginContext,
@@ -8,6 +9,7 @@ import {
 import { Visible } from "@engine/features/render-plugin/mod.ts";
 import { BasicMaterial } from "@engine/features/render-plugin/mod.ts";
 import { AsteroidComponent } from "../features/asteroid-plugin/components/asteroid.ts";
+import { EnteringZoneScene } from "./entering-zone-scene.ts";
 import * as THREE from "three";
 
 interface WorldEvent {
@@ -15,22 +17,57 @@ interface WorldEvent {
   data: Record<string, unknown>;
 }
 
+/**
+ * GameplayScene - Main game loop and wave management
+ *
+ * This scene handles all gameplay logic including:
+ * - Player ship initialization and management
+ * - Wave manager coordination
+ * - Wave transitions (pushing EnteringZoneScene onto stack)
+ * - Game over handling
+ * - Asteroid lifecycle during gameplay
+ *
+ * Architecture Notes:
+ * - All plugins are installed globally in main.tsx, not per-scene
+ * - This scene spawns the player and coordinates entity lifecycle
+ * - Wave transitions use scene stack (pushes EnteringZoneScene on top)
+ * - Scene remains initialized during pauses (doesn't dispose/reinit)
+ *
+ * Scene Lifecycle:
+ * - init(): Spawn player, setup wave listeners, start first wave
+ * - dispose(): Clean up event listeners and entities
+ * - pause()/resume(): Called when entering/exiting zone scenes
+ */
 export class GameplayScene extends BaseScene {
   private shipEntityId: GUID | null = null;
   private threeJsScene: THREE.Scene;
   private effectCompleteListener?: (event: WorldEvent) => void;
   private waveCompleteListener?: (event: WorldEvent) => void;
+  private enteringZoneListener?: (event: WorldEvent) => void;
 
   constructor(threeJsScene: THREE.Scene) {
     super("asteroids-main");
     this.threeJsScene = threeJsScene;
   }
 
+  /**
+   * Initialize gameplay scene
+   *
+   * Steps:
+   * 1. Spawn the player ship (invisible during warp effect)
+   * 2. Connect ship plugin systems
+   * 3. Set asteroids to fade in for gameplay
+   * 4. Listen for wave lifecycle events
+   * 5. Emit start_wave to begin Wave 1
+   */
   init(world: World): void {
     // NOTE: All plugins are already installed in main.tsx
     // This scene sets up gameplay-specific entities and events
     // and coordinates the timing of ship and asteroid spawning
 
+    // Emit scene-transition event for UI
+    world.emitEvent("scene-transition", { view: "gameplay" });
+    
     // Get the ship plugin context from resources
     const shipPluginContext = world.getResource<ShipPluginContext>("shipPluginContext");
     
@@ -66,6 +103,13 @@ export class GameplayScene extends BaseScene {
     };
     world.onEvent("wave_complete", this.waveCompleteListener);
 
+    // Setup listener for entering zone start
+    // This allows us to push EnteringZoneScene onto scene stack for wave transitions
+    this.enteringZoneListener = (event) => {
+      this.onEnteringZone(world, event);
+    };
+    world.onEvent("entering_zone", this.enteringZoneListener);
+
     // Emit start_wave event to initialize Wave 1
     // InitialZoneEntrySystem listens for this and emits entering_zone
     // which triggers the warp effect
@@ -89,6 +133,24 @@ export class GameplayScene extends BaseScene {
   }
 
   /**
+   * Called when entering a new zone (wave transition begins)
+   *
+   * This is where we push the EnteringZoneScene onto the scene stack,
+   * creating a paused overlay effect while the wave transition happens.
+   */
+  private onEnteringZone(world: World, event: WorldEvent): void {
+    const waveNumber = (event.data.waveNumber as number) ?? 1;
+
+    const sceneManager = world.getResource<SceneManager>("sceneManager");
+    if (sceneManager) {
+      // Push entering zone scene on top of scene stack
+      // This pauses the current gameplay scene while showing the transition effect
+      sceneManager.pushScene(new EnteringZoneScene(waveNumber));
+      console.log(`[GameplayScene] Pushed EnteringZoneScene for wave ${waveNumber}`);
+    }
+  }
+
+  /**
    * Called when a wave is complete
    * Makes the ship invisible for the wave transition effect
    */
@@ -103,7 +165,9 @@ export class GameplayScene extends BaseScene {
   }
 
   /**
-   * Cleanup event listeners
+   * Clean up gameplay scene resources
+   *
+   * Removes all event listeners and cleans up entities tagged with this scene
    */
   dispose(): void {
     if (this.effectCompleteListener) {
@@ -112,5 +176,10 @@ export class GameplayScene extends BaseScene {
     if (this.waveCompleteListener) {
       this.waveCompleteListener = undefined;
     }
+    if (this.enteringZoneListener) {
+      this.enteringZoneListener = undefined;
+    }
+
+    console.log("[GameplayScene] Disposed");
   }
 }
