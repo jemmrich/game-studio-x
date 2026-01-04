@@ -78,9 +78,9 @@ export class SceneManager {
     
     this.pendingScene = scene;
     if (this.currentScene) {
-      this.state = SceneState.Unloading;
+      this._updateState(SceneState.Unloading);
     } else {
-      this.state = SceneState.Loading;
+      this._updateState(SceneState.Loading);
     }
   }
 
@@ -125,19 +125,23 @@ export class SceneManager {
       this.sceneStack.push(this.currentScene);
     }
     this.pendingScene = scene;
-    this.state = SceneState.Loading;
+    this._updateState(SceneState.Loading);
   }
 
   /**
    * Pop the current scene and resume the previous scene from the stack.
-   * Internal method called by the lifecycle system or tests with world reference.
    * 
    * Emits "scene-dispose" event after current scene is disposed.
    * Emits "scene-resume" event when previous scene is resumed.
+   * 
+   * Phase 3: World is now stored on manager, no longer needs to be passed.
+   * Kept for backward compatibility but world parameter is ignored.
    */
   popScene(world?: any): void {
+    const worldRef = this.world || world || (null as any);
+    
     if (this.currentScene) {
-      this.currentScene.dispose(world || (null as any));
+      this.currentScene.dispose(worldRef);
       
       // Emit dispose event
       if (this.world) {
@@ -155,8 +159,8 @@ export class SceneManager {
 
     if (this.sceneStack.length > 0) {
       this.currentScene = this.sceneStack.pop()!;
-      this.state = SceneState.Active;
-      this.currentScene.resume(world || (null as any)); // World will be injected by lifecycle system
+      this._updateState(SceneState.Active);
+      this.currentScene.resume(worldRef);
       
       // Emit resume event
       if (this.world) {
@@ -170,7 +174,7 @@ export class SceneManager {
       }
     } else {
       this.currentScene = null;
-      this.state = SceneState.Unloaded;
+      this._updateState(SceneState.Unloaded);
     }
   }
 
@@ -219,11 +223,52 @@ export class SceneManager {
 
   /**
    * Get the scene stack depth (number of paused scenes).
+   * Does not include the current scene.
    * 
-   * @internal Used by lifecycle system to detect transition type
+   * Example: If you have Gameplay on bottom and PauseMenu on top,
+   * the depth is 1 (just the Gameplay scene is paused).
    */
-  _getSceneStackDepth(): number {
+  getSceneStackDepth(): number {
     return this.sceneStack.length;
+  }
+
+  /**
+   * Get all scenes in the stack (bottom to top, not including current).
+   * Useful for debugging or querying the scene hierarchy.
+   */
+  getSceneStack(): Scene[] {
+    return [...this.sceneStack];
+  }
+
+  /**
+   * Get total number of scenes (current + paused in stack).
+   * 
+   * Example:
+   * - No scene: 0
+   * - Gameplay active: 1
+   * - Gameplay + PauseMenu: 2
+   * - Gameplay + PauseMenu + SettingsDialog: 3
+   */
+  getTotalSceneCount(): number {
+    return (this.currentScene ? 1 : 0) + this.sceneStack.length;
+  }
+
+  /**
+   * Check if a specific scene is paused in the stack.
+   */
+  isScenePaused(sceneId: string): boolean {
+    return this.sceneStack.some((s) => s.id === sceneId);
+  }
+
+  /**
+   * Internal: Update state and notify subscribers.
+   * Called by lifecycle system when scene state changes.
+   * 
+   * Phase 3: Used internally to coordinate lifecycle transitions.
+   * @internal
+   */
+  _updateStateWithoutNotification(newState: SceneState): void {
+    this.state = newState;
   }
 
   /**
@@ -255,22 +300,33 @@ export class SceneManager {
   }
 
   /**
-   * Internal: set current scene (called by lifecycle system)
+   * Internal: set current scene (called by lifecycle system in Phase 1-2)
+   * 
+   * @deprecated Phase 3: Use _completeSceneTransition() instead
+   * Kept for backward compatibility with legacy tests.
+   * @internal
    */
   _setCurrentScene(scene: Scene | null): void {
     this.currentScene = scene;
   }
 
   /**
-   * Internal: set state (called by lifecycle system)
-   * Uses _updateState to trigger state change notifications
+   * Internal: set state (called by lifecycle system in Phase 1-2)
+   * 
+   * @deprecated Phase 3: Use _completeSceneTransition() or _updateState() instead
+   * Kept for backward compatibility with legacy tests.
+   * @internal
    */
   _setState(state: SceneState): void {
     this._updateState(state);
   }
 
   /**
-   * Internal: clear pending scene (called by lifecycle system)
+   * Internal: clear pending scene (called by lifecycle system in Phase 1-2)
+   * 
+   * @deprecated Phase 3: No longer needed - handled by _completeSceneTransition()
+   * Kept for backward compatibility with legacy tests.
+   * @internal
    */
   _clearPending(): void {
     this.pendingScene = null;
@@ -391,7 +447,7 @@ export class SceneManager {
       [SceneState.Loading]: [SceneState.Active, SceneState.Unloaded],
       [SceneState.Active]: [SceneState.Unloading, SceneState.Loading, SceneState.Paused],
       [SceneState.Paused]: [SceneState.Active],
-      [SceneState.Unloading]: [SceneState.Unloaded, SceneState.Active],
+      [SceneState.Unloading]: [SceneState.Unloaded, SceneState.Active, SceneState.Loading],
     };
 
     const allowed = validTransitions[fromState] || [];
@@ -449,5 +505,61 @@ export class SceneManager {
    */
   _setStateValidationEnabled(enabled: boolean): void {
     this.enableStateValidation = enabled;
+  }
+
+  /**
+   * Phase 3: Internal lifecycle coordination - Called by SceneLifecycleSystem
+   * when a scene transition has completed successfully.
+   * 
+   * This method handles all state updates and event notifications after
+   * a scene's init() or resume() lifecycle method completes.
+   * 
+   * @internal Called by SceneLifecycleSystem during handleLoading()
+   */
+  _completeSceneTransition(pendingScene: Scene, transitionType: "load" | "push"): void {
+    const previousScene = this.currentScene;
+    
+    // Update scene reference
+    this.currentScene = pendingScene;
+    this.pendingScene = null;
+    
+    // Update state (this notifies subscribers and emits state-changed event)
+    this._updateState(SceneState.Active);
+    
+    // Emit lifecycle events
+    this._notifySceneLoaded(pendingScene);
+    this._notifyTransitionComplete(previousScene, pendingScene, transitionType);
+  }
+
+  /**
+   * Phase 3: Internal lifecycle coordination - Called by SceneLifecycleSystem
+   * when a scene has been disposed and any pending scenes need to be processed.
+   * 
+   * This method handles state transitions after a scene's dispose() completes.
+   * 
+   * @internal Called by SceneLifecycleSystem during handleUnloading()
+   */
+  _completeSceneDisposal(): void {
+    // Check if there's a pending scene to load
+    if (this.pendingScene) {
+      this.currentScene = null;
+      this._updateState(SceneState.Loading);
+    } else if (this.sceneStack.length > 0) {
+      // Resume top of stack
+      this.currentScene = this.sceneStack[this.sceneStack.length - 1];
+      this._updateState(SceneState.Active);
+    } else {
+      // No scenes left
+      this.currentScene = null;
+      this._updateState(SceneState.Unloaded);
+    }
+  }
+
+  /**
+   * Phase 3: Internal - Get scene stack depth (for lifecycle system).
+   * @internal Used by lifecycle system to detect transition type
+   */
+  _getSceneStackDepth(): number {
+    return this.sceneStack.length;
   }
 }

@@ -4,13 +4,17 @@ import type { World } from "../core/world.ts";
 import { Tag } from "../components/tag.ts";
 
 /**
- * System responsible for processing scene transitions and lifecycle state changes.
- * Manages the scene state machine: Loading → Active → Unloading, etc.
- *
+ * System responsible for executing scene lifecycle methods and managing entity cleanup.
+ * 
+ * Phase 3: This system now delegates all state management to SceneManager.
+ * SceneManager is the single source of truth for scene state.
+ * SceneLifecycleSystem focuses on:
+ * - Calling scene lifecycle methods (create, init, pause, resume, dispose, reset)
+ * - Cleaning up scene entities
+ * - Delegating state changes to SceneManager
+ * 
  * This system should run early in the frame to ensure scene changes happen
  * before other systems access the world state.
- * 
- * Coordinates with SceneManager to emit scene lifecycle events through the World's event bus.
  */
 export class SceneLifecycleSystem {
   enabled: boolean = true;
@@ -27,7 +31,7 @@ export class SceneLifecycleSystem {
 
     switch (state) {
       case SceneState.Loading:
-        // Detect transition type from scene stack
+        // Detect transition type from scene stack depth
         transitionType = sceneManager._getSceneStackDepth() > 0 ? "push" : "load";
         this.handleLoading(world, sceneManager, transitionType);
         break;
@@ -53,37 +57,35 @@ export class SceneLifecycleSystem {
 
   /**
    * Handle scene loading.
-   * Creates the scene, calls create() and init() lifecycle methods.
+   * Creates the scene (once), calls init() lifecycle method, then notifies SceneManager.
+   * 
+   * Phase 3: Delegates all state management to SceneManager via _completeSceneTransition()
    */
   private handleLoading(world: World, sceneManager: SceneManager, transitionType: "load" | "push"): void {
     const pendingScene = sceneManager.getPendingScene();
     if (!pendingScene) return;
 
-    const previousScene = sceneManager.getCurrentScene();
-
-    // Call scene create() only once
-    if (previousScene === null) {
+    // Call scene create() only once (when first loaded)
+    // We detect this by checking if it's new (never been set as current)
+    // This is a heuristic - ideally create() is only called once in the scene's lifetime
+    if (sceneManager.getCurrentScene() === null) {
       pendingScene.create();
     }
 
-    // Initialize the scene
+    // Initialize the scene (always called when transitioning to active)
     pendingScene.init(world);
 
-    // Update manager state
-    sceneManager._setCurrentScene(pendingScene);
-    sceneManager._setState(SceneState.Active);
-    sceneManager._clearPending();
-
-    // Notify listeners (triggers both legacy callbacks and event emission)
-    sceneManager._notifySceneLoaded(pendingScene);
-    
-    // Emit transition complete event
-    sceneManager._notifyTransitionComplete(previousScene, pendingScene, transitionType);
+    // Notify SceneManager that transition is complete
+    // This handles all state updates and event notifications
+    sceneManager._completeSceneTransition(pendingScene, transitionType);
   }
 
   /**
    * Handle scene unloading.
-   * Cleans up all entities owned by the scene, then loads the pending scene.
+   * Cleans up all entities owned by the scene, calls dispose() lifecycle method,
+   * then notifies SceneManager to handle any pending transitions.
+   * 
+   * Phase 3: Delegates state management to SceneManager via _completeSceneDisposal()
    */
   private handleUnloading(world: World, sceneManager: SceneManager): void {
     const currentScene = sceneManager.getCurrentScene();
@@ -95,19 +97,13 @@ export class SceneLifecycleSystem {
     // Call dispose lifecycle
     currentScene.dispose(world);
 
-    // Notify listeners (triggers both legacy callbacks and event emission)
+    // Emit unload event (for Phase 1/2 compatibility)
+    // This is done before _completeSceneDisposal to notify listeners
     sceneManager._notifySceneUnloaded(currentScene);
 
-    // Load pending scene if one exists
-    const pendingScene = sceneManager.getPendingScene();
-    if (pendingScene) {
-      sceneManager._setCurrentScene(null);
-      sceneManager._setState(SceneState.Loading);
-      // The pending scene will be loaded in the next frame
-    } else {
-      sceneManager._setCurrentScene(null);
-      sceneManager._setState(SceneState.Unloaded);
-    }
+    // Notify SceneManager that disposal is complete
+    // This handles state transitions for pending scenes or stack resumption
+    sceneManager._completeSceneDisposal();
   }
 
   /**
