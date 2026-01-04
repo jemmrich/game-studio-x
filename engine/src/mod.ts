@@ -8,6 +8,19 @@ export { config } from "./config.ts";
 export { World } from "./core/world.ts";
 export { Query } from "./core/query.ts";
 export { type Scene, SceneState } from "./core/scene.ts";
+export {
+  type SceneTransitionStartEvent,
+  type SceneTransitionCompleteEvent,
+  type SceneLoadEvent,
+  type SceneUnloadEvent,
+  type ScenePauseEvent,
+  type SceneResumeEvent,
+  type SceneDisposeEvent,
+  type SceneResetEvent,
+  type SceneErrorEvent,
+  type SceneEvent,
+  SCENE_EVENTS,
+} from "./core/scene-events.ts";
 export { BaseScene } from "./core/base-scene.ts";
 export { DemoBaseScene } from "./core/demo-base-scene.ts";
 

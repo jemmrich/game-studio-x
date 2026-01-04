@@ -9,6 +9,8 @@ import { Tag } from "../components/tag.ts";
  *
  * This system should run early in the frame to ensure scene changes happen
  * before other systems access the world state.
+ * 
+ * Coordinates with SceneManager to emit scene lifecycle events through the World's event bus.
  */
 export class SceneLifecycleSystem {
   enabled: boolean = true;
@@ -17,11 +19,17 @@ export class SceneLifecycleSystem {
     const sceneManager = world.getResource<SceneManager>("sceneManager");
     if (!sceneManager) return;
 
+    // Set the world reference on first update (for event emission)
+    sceneManager._setWorld(world);
+
     const state = sceneManager.getState();
+    let transitionType: "load" | "push" = "load"; // Track for transition complete event
 
     switch (state) {
       case SceneState.Loading:
-        this.handleLoading(world, sceneManager);
+        // Detect transition type from scene stack
+        transitionType = sceneManager._getSceneStackDepth() > 0 ? "push" : "load";
+        this.handleLoading(world, sceneManager, transitionType);
         break;
       case SceneState.Unloading:
         this.handleUnloading(world, sceneManager);
@@ -47,12 +55,14 @@ export class SceneLifecycleSystem {
    * Handle scene loading.
    * Creates the scene, calls create() and init() lifecycle methods.
    */
-  private handleLoading(world: World, sceneManager: SceneManager): void {
+  private handleLoading(world: World, sceneManager: SceneManager, transitionType: "load" | "push"): void {
     const pendingScene = sceneManager.getPendingScene();
     if (!pendingScene) return;
 
+    const previousScene = sceneManager.getCurrentScene();
+
     // Call scene create() only once
-    if (sceneManager.getCurrentScene() === null) {
+    if (previousScene === null) {
       pendingScene.create();
     }
 
@@ -64,8 +74,11 @@ export class SceneLifecycleSystem {
     sceneManager._setState(SceneState.Active);
     sceneManager._clearPending();
 
-    // Notify listeners
+    // Notify listeners (triggers both legacy callbacks and event emission)
     sceneManager._notifySceneLoaded(pendingScene);
+    
+    // Emit transition complete event
+    sceneManager._notifyTransitionComplete(previousScene, pendingScene, transitionType);
   }
 
   /**
@@ -82,7 +95,7 @@ export class SceneLifecycleSystem {
     // Call dispose lifecycle
     currentScene.dispose(world);
 
-    // Notify listeners
+    // Notify listeners (triggers both legacy callbacks and event emission)
     sceneManager._notifySceneUnloaded(currentScene);
 
     // Load pending scene if one exists

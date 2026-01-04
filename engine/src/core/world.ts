@@ -111,7 +111,14 @@ export class World {
   // EVENTS
   // ─────────────────────────────────────────────
 
-  emitEvent(type: string, data: any = {}): void {
+  /**
+   * Emit a typed event to all listeners.
+   * Events are stored for retrieval and notified immediately to listeners.
+   * 
+   * @param type - The event type identifier
+   * @param data - The event payload (typed)
+   */
+  emitEvent<T = any>(type: string, data: T = {} as T): void {
     const event: WorldEvent = { type, data };
     this.events.push(event);
 
@@ -124,15 +131,40 @@ export class World {
     }
   }
 
-  getEvents(type: string): WorldEvent[] {
+  /**
+   * Get stored events of a specific type.
+   * 
+   * @param type - The event type identifier
+   * @returns Array of events of that type
+   */
+  getEvents<T = any>(type: string): WorldEvent[] {
     return this.events.filter((event) => event.type === type);
   }
 
-  onEvent(type: string, listener: (event: WorldEvent) => void): void {
+  /**
+   * Subscribe to events of a specific type.
+   * Returns an unsubscribe function for cleanup.
+   * 
+   * @param type - The event type identifier
+   * @param listener - Callback function receiving the typed event
+   * @returns Unsubscribe function
+   */
+  onEvent<T = any>(type: string, listener: (event: { type: string; data: T }) => void): () => void {
     if (!this.eventListeners.has(type)) {
       this.eventListeners.set(type, []);
     }
-    this.eventListeners.get(type)!.push(listener);
+    this.eventListeners.get(type)!.push(listener as any);
+    
+    // Return unsubscribe function
+    return () => {
+      const listeners = this.eventListeners.get(type);
+      if (listeners) {
+        const index = listeners.indexOf(listener as any);
+        if (index >= 0) {
+          listeners.splice(index, 1);
+        }
+      }
+    };
   }
 
   clearEvents(): void {
