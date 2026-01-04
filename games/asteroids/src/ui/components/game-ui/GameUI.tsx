@@ -16,11 +16,7 @@ interface GameUIProps {
 export function GameUI({ world, isLoading, loadProgress, currentAsset }: GameUIProps) {
   const [currentView, setCurrentView] = useState<"title" | "gameplay" | "enteringZone">("title");
 
-  // Show loading screen if assets are still loading
-  if (isLoading) {
-    return <LoadingScreen progress={loadProgress} currentAsset={currentAsset} />;
-  }
-
+  // Setup event listeners once the component mounts (regardless of loading state)
   useEffect(() => {
     // Listen for scene transitions
     world.onEvent("scene-transition", (event) => {
@@ -36,6 +32,11 @@ export function GameUI({ world, isLoading, loadProgress, currentAsset }: GameUIP
       setCurrentView("gameplay");
     });
   }, [world]);
+
+  // Show loading screen if assets are still loading
+  if (isLoading) {
+    return <LoadingScreen progress={loadProgress} currentAsset={currentAsset} />;
+  }
 
   switch (currentView) {
     case "title":
