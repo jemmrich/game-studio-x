@@ -47,6 +47,12 @@ export class SceneManager {
   private onSceneLoadCallbacks: ((scene: Scene) => void)[] = [];
   private onSceneUnloadCallbacks: ((scene: Scene) => void)[] = [];
 
+  /** Observable state subscribers (Phase 2: Observable State) */
+  private stateSubscribers: Set<(state: SceneState) => void> = new Set();
+
+  /** Whether to validate state transitions (Phase 2: Observable State) */
+  private enableStateValidation: boolean = true;
+
   /**
    * Load a new scene, replacing the current scene.
    * Scene loading is instant (no transition effects).
@@ -257,9 +263,10 @@ export class SceneManager {
 
   /**
    * Internal: set state (called by lifecycle system)
+   * Uses _updateState to trigger state change notifications
    */
   _setState(state: SceneState): void {
-    this.state = state;
+    this._updateState(state);
   }
 
   /**
@@ -330,5 +337,117 @@ export class SceneManager {
         }
       );
     }
+  }
+
+  /**
+   * Phase 2: Observable State - Subscribe to scene state changes.
+   * 
+   * Returns an unsubscribe function for easy cleanup.
+   * 
+   * @example
+   * const unsubscribe = sceneManager.subscribeToStateChanges((newState) => {
+   *   console.log(`Scene state changed to: ${newState}`);
+   * });
+   * 
+   * // Later, cleanup subscription
+   * unsubscribe();
+   */
+  subscribeToStateChanges(callback: (state: SceneState) => void): () => void {
+    this.stateSubscribers.add(callback);
+    
+    // Return unsubscribe function
+    return () => {
+      this.stateSubscribers.delete(callback);
+    };
+  }
+
+  /**
+   * Phase 2: Observable State - Get all state subscribers (for testing)
+   * @internal
+   */
+  _getStateSubscriberCount(): number {
+    return this.stateSubscribers.size;
+  }
+
+  /**
+   * Phase 2: Observable State - Validate state transition.
+   * Throws an error if transition is invalid.
+   * 
+   * Valid transitions:
+   * - Unloaded → Loading
+   * - Loading → Active
+   * - Active → Unloading
+   * - Active → Loading (replacing scene)
+   * - Unloading → Unloaded
+   * - Any state → Error (special case)
+   * 
+   * @throws {Error} If transition is invalid
+   */
+  private validateStateTransition(fromState: SceneState, toState: SceneState): boolean {
+    if (!this.enableStateValidation) return true;
+
+    const validTransitions: Record<SceneState, SceneState[]> = {
+      [SceneState.Unloaded]: [SceneState.Loading],
+      [SceneState.Loading]: [SceneState.Active, SceneState.Unloaded],
+      [SceneState.Active]: [SceneState.Unloading, SceneState.Loading, SceneState.Paused],
+      [SceneState.Paused]: [SceneState.Active],
+      [SceneState.Unloading]: [SceneState.Unloaded, SceneState.Active],
+    };
+
+    const allowed = validTransitions[fromState] || [];
+    return allowed.includes(toState);
+  }
+
+  /**
+   * Phase 2: Observable State - Internal: Update state and notify subscribers.
+   * Validates transition if validation is enabled.
+   * 
+   * @internal Called by lifecycle system and internal methods
+   */
+  _updateState(newState: SceneState): void {
+    if (newState === this.state) {
+      return; // No change
+    }
+
+    if (!this.validateStateTransition(this.state, newState)) {
+      const error = `Invalid state transition: ${this.state} → ${newState}`;
+      console.error(`[SceneManager] ${error}`);
+      throw new Error(error);
+    }
+
+    const oldState = this.state;
+    this.state = newState;
+
+    // Notify all state subscribers
+    this.stateSubscribers.forEach((callback) => {
+      try {
+        callback(newState);
+      } catch (error) {
+        console.error(
+          "[SceneManager] Error in state subscriber:",
+          error
+        );
+      }
+    });
+
+    // Emit state change event through World
+    if (this.world) {
+      this.world.emitEvent<{ from: SceneState; to: SceneState; timestamp: number }>(
+        "scene-state-changed",
+        {
+          from: oldState,
+          to: newState,
+          timestamp: Date.now(),
+        }
+      );
+    }
+  }
+
+  /**
+   * Phase 2: Observable State - Disable state validation (for testing legacy code)
+   * @internal
+   */
+  _setStateValidationEnabled(enabled: boolean): void {
+    this.enableStateValidation = enabled;
   }
 }

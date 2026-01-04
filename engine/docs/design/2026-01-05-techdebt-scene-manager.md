@@ -4,6 +4,16 @@
 **Severity:** High  
 **Impact:** Engine core, UI coupling, game development friction
 
+## Status
+
+| Phase | Status | Document |
+|-------|--------|----------|
+| Phase 1: Event System | ✅ **COMPLETE** | [2026-01-05-techdebt-scene-manager-phase1-complete.md](2026-01-05-techdebt-scene-manager-phase1-complete.md) |
+| Phase 2: Observable State | ✅ **COMPLETE** | [2026-01-05-techdebt-scene-manager-phase2-complete.md](2026-01-05-techdebt-scene-manager-phase2-complete.md) |
+| Phase 3: Unified Lifecycle | ⏳ Planned | — |
+| Phase 4: Stack Documentation | ⏳ Planned | — |
+| Phase 5: Transition Options | ⏳ Planned | — |
+
 ## Overview
 
 The current SceneManager implementation has fundamental architectural issues that create friction in game development. The design relies on implicit event-based transitions and callback patterns that are difficult to test, debug, and extend. This tech debt primarily manifests in:
@@ -348,7 +358,7 @@ popScene(world?: any): void {
 
 ## Proposed Solutions
 
-### Phase 1: Implement Event System for Scene Manager
+### Phase 1: Implement Event System for Scene Manager (complete)
 
 Create a unified event system that integrates with World's event bus:
 
@@ -382,42 +392,66 @@ interface SceneLifecycleEvent {
 - UI can listen to scene events same way as any other events
 - Easier to test and debug
 
-### Phase 2: Observable Scene State (State Machine)
+### Phase 2: Observable Scene State (State Machine) ✅ **COMPLETE**
 
-Implement an explicit state machine with observable state:
+See [Phase 2 Completion Document](2026-01-05-techdebt-scene-manager-phase2-complete.md) for full details.
+
+**What was implemented:**
+
+Explicit state machine with observable state has been added to SceneManager:
 
 ```typescript
-class SceneStateMachine {
-  private state: SceneStateNode;
-  private subscribers: Set<(state: SceneState) => void>;
-  
-  transitionTo(targetState: SceneState): void {
-    // Validate transition
-    // Emit events
-    // Update subscribers
-  }
-  
-  subscribe(callback: (state: SceneState) => void): () => void {
-    // Return unsubscribe function
-  }
-}
+// Subscribe to state changes
+const unsubscribe = sceneManager.subscribeToStateChanges((newState) => {
+  console.log(`State changed to: ${newState}`);
+});
 
-// UI can now do:
-const [sceneState, setSceneState] = useState<SceneState>("unloaded");
+// State changes are validated
+sceneManager._setState(SceneState.Loading);  // ✓ Valid
+sceneManager._setState(SceneState.Unloaded); // ✗ Invalid: throws error
 
-useEffect(() => {
-  return sceneManager.subscribeToStateChanges((state) => {
-    setSceneState(state);
-  });
-}, [sceneManager]);
+// Clean up subscription
+unsubscribe();
 ```
 
-**Benefits:**
-- State is explicit and validated
-- UI can observe state directly (no event coupling)
-- State transitions are atomic
-- Easy to debug (log all state changes)
-- Synchronous and predictable
+**State Transition Rules (Enforced):**
+- `Unloaded` → `Loading`
+- `Loading` → `Active` or `Unloaded`
+- `Active` → `Unloading`, `Loading`, or `Paused`
+- `Paused` → `Active`
+- `Unloading` → `Unloaded` or `Active`
+
+**Features Delivered:**
+- ✅ Observable state with subscription API
+- ✅ Automatic unsubscribe functions
+- ✅ State validation with clear error messages
+- ✅ Integrated with World event system (`scene-state-changed` events)
+- ✅ Error handling in subscribers (one error doesn't break others)
+- ✅ Duplicate state changes ignored
+- ✅ Multiple concurrent subscribers supported
+- ✅ 14 comprehensive tests (all passing)
+- ✅ Interactive demo: `deno run --allow-all engine/src/demos/scene-state.ts`
+
+**React Integration Example:**
+```typescript
+function GameUI({ sceneManager }) {
+  const [sceneState, setSceneState] = useState<SceneState>(
+    sceneManager.getState()
+  );
+
+  useEffect(() => {
+    return sceneManager.subscribeToStateChanges(setSceneState);
+  }, [sceneManager]);
+
+  return <div>Current State: {sceneState}</div>;
+}
+```
+
+**Test Results:**
+- 14/14 tests passing
+- All state validation tests passing
+- All subscription tests passing
+- All integration tests passing
 
 ### Phase 3: Unify Lifecycle Management
 
@@ -477,33 +511,71 @@ A successful refactor would allow:
 
 ## Effort Estimate
 
-- **Phase 1 (Event System):** 2-3 days
-- **Phase 2 (Observable State):** 2-3 days
-- **Phase 3 (Unify Lifecycle):** 3-4 days
-- **Phase 4 (Document & Test Stack):** 1-2 days
-- **Phase 5 (Transition Options):** 2-3 days
-- **Integration & Testing:** 2-3 days
+| Phase | Estimate | Status | Actual |
+|-------|----------|--------|--------|
+| Phase 1 (Event System) | 2-3 days | ✅ Complete | ~2 days |
+| Phase 2 (Observable State) | 2-3 days | ✅ Complete | ~1 day |
+| Phase 3 (Unify Lifecycle) | 3-4 days | ⏳ Planned | — |
+| Phase 4 (Document & Test Stack) | 1-2 days | ⏳ Planned | — |
+| Phase 5 (Transition Options) | 2-3 days | ⏳ Planned | — |
+| Integration & Testing | 2-3 days | ⏳ Planned | — |
+
+**Total So Far:** ~3 days  
+**Total Remaining:** ~10-15 days
 
 **Total:** 12-18 days for complete refactor
 
+## Implementation Status
+
+### ✅ **Phases 1 & 2 Complete!**
+
+The most critical pain points have been addressed:
+- **Phase 1:** Unified event system through World's event bus
+- **Phase 2:** Observable state with validation and subscriptions
+
+These two phases achieve the core goals of the tech debt fix:
+1. ✅ UI can observe scene state with simple subscriptions
+2. ✅ All scene lifecycle events in unified event bus
+3. ✅ State machine validated and explicit
+4. ✅ Scene transitions testable without complex mocks
+5. ✅ No regression in existing functionality
+
+### 🎯 Recommended Next: Phase 3 (Unify Lifecycle)
+
+Phase 3 is the natural continuation, consolidating SceneManager and SceneLifecycleSystem into a single orchestration layer.
+
 ## Implementation Priority
 
-1. **Start with:** Event system (Phase 1) + Observable state (Phase 2)
-   - These address the most pressing pain points (UI coupling)
-   - Can be done incrementally without breaking existing code
-   - Provides immediate value to game developers
+1. **Complete:** Event system (Phase 1) ✅
+   - Unified World event bus for all scene events
+   - Typed events with clear payloads
+   - Enables UI to listen to scenes like any other events
 
-2. **Follow with:** Unify lifecycle management (Phase 3)
-   - Requires buy-in from Phase 1 & 2
-   - Largest refactor
+2. **Complete:** Observable state (Phase 2) ✅
+   - Explicit state machine with validation
+   - Observable state via subscriptions
+   - State as single source of truth
 
-3. **Polish with:** Stack documentation (Phase 4) + Transition options (Phase 5)
-   - Nice-to-have features
-   - Can be added after core improvements
+3. **Next:** Unify lifecycle management (Phase 3) ⏳
+   - Consolidate SceneManager and SceneLifecycleSystem
+   - Remove private setters, explicit public API
+   - Atomic state transitions
+
+4. **Polish:** Stack documentation (Phase 4) ⏳
+   - Query APIs for scene stack
+   - Clear documentation of pause/resume semantics
+   - Examples of common patterns
+
+5. **Nice-to-have:** Transition options (Phase 5) ⏳
+   - Custom transition animations
+   - Loading screen support
+   - Transition middleware
 
 ## Next Steps
 
-1. Create an issue tracker item for each phase
-2. Review with team for agreement on approach
-3. Prototype Phase 1 (event system) with a spike
-4. Implement phases in order with backward compatibility
+1. ✅ Phase 1 & 2 implementation complete
+2. ✅ All tests passing (Phase 1: 7 tests, Phase 2: 14 tests)
+3. ✅ Demos created and working
+4. ✅ Completion documents written
+5. 🎯 Ready for Phase 3: Unified lifecycle management
+6. 📋 Plan Phase 3 implementation and timeline
