@@ -1,0 +1,54 @@
+@font-face {
+  font-family: 'Hyperspace';
+  src: url('/hyperspace.ttf') format('truetype');
+}
+
+.paused-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.paused-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 2rem;
+}
+
+.paused-title {
+  font-family: 'Hyperspace', sans-serif;
+  font-size: 5rem;
+  color: #ffffff;
+  margin: 0;
+  text-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
+}
+
+.paused-instruction {
+  font-family: 'Hyperspace', sans-serif;
+  font-size: 1.5rem;
+  color: #ff0000;
+  margin: 0;
+  animation: fadeInOut 1.5s ease-in-out infinite;
+}
+
+@keyframes fadeInOut {
+  0% {
+    opacity: 0.25;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.25;
+  }
+}

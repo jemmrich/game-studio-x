@@ -3,12 +3,15 @@ import type { World } from "@engine/core/world.ts";
 import type { Scene } from "@engine/core/scene.ts";
 import type { SceneManager } from "@engine/resources/scene-manager.ts";
 import type { WaveManager } from "../../../game/resources/wave-manager.ts";
+import type { PauseState } from "../../../game/resources/pause-state.ts";
 import { useSceneState } from "../../../hooks/useSceneState.ts";
+import { usePauseState } from "../../../hooks/usePauseState.ts";
 import { Title } from "../title/Title.tsx";
 import { EnteringZone } from "../entering-zone/EnteringZone.tsx";
 import { Hud } from "../hud/Hud.tsx";
 import { DebugInfo } from "../debug-info/DebugInfo.tsx";
 import { LoadingScreen } from "../loading-screen/LoadingScreen.tsx";
+import { Paused } from "../paused/Paused.tsx";
 
 interface GameUIProps {
   world: World;
@@ -38,6 +41,15 @@ interface GameUIProps {
 export function GameUI({ world, sceneManager, isLoading, loadProgress, currentAsset }: GameUIProps) {
   // Observable scene state - single source of truth
   const currentScene = useSceneState(sceneManager);
+  
+  // Observable pause state - may not exist initially
+  let pauseState: PauseState | null = null;
+  try {
+    pauseState = world.getResource<PauseState>("pauseState");
+  } catch {
+    // PauseState not registered yet
+  }
+  const isPaused = usePauseState(pauseState);
 
   // Show loading screen while assets load
   useEffect(() => {
@@ -51,7 +63,7 @@ export function GameUI({ world, sceneManager, isLoading, loadProgress, currentAs
   }
 
   // Render based on current scene
-  return renderScene(currentScene, world, sceneManager);
+  return renderScene(currentScene, world, sceneManager, isPaused);
 }
 
 /**
@@ -65,14 +77,14 @@ export function GameUI({ world, sceneManager, isLoading, loadProgress, currentAs
  * For overlaid scenes (e.g., EnteringZoneScene on top of GameplayScene),
  * both scenes are rendered with the overlay on top.
  */
-function renderScene(currentScene: Scene | null, world: World, sceneManager: SceneManager) {
+function renderScene(currentScene: Scene | null, world: World, sceneManager: SceneManager, isPaused: boolean) {
   if (!currentScene) {
     return <div className="no-scene">No active scene</div>;
   }
 
   // Get the full scene stack to check for overlays
   const sceneStack = sceneManager.getSceneStack();
-  const hasUnderlying = sceneStack.length > 1;
+  const _hasUnderlying = sceneStack.length > 1;
 
   // Query wave number from WaveManager for display
   const waveManager = world.getResource<WaveManager>("waveManager");
@@ -87,6 +99,7 @@ function renderScene(currentScene: Scene | null, world: World, sceneManager: Sce
         <>
           <Hud world={world} />
           <DebugInfo world={world} />
+          {isPaused && <Paused />}
         </>
       );
 
