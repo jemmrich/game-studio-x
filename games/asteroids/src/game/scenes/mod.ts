@@ -8,11 +8,23 @@
  *
  * Each scene represents a distinct game state with clear initialization and cleanup:
  *
- * • TitleScene - Main menu with decorative asteroids
- *   - Shows title screen
+ * • TitleScene - Main title screen with decorative asteroids
+ *   - Shows title screen with "Press Any Key" prompt
  *   - Spawns animated asteroids for visual effect
- *   - Listens for keyboard input to transition to gameplay
+ *   - Listens for keyboard input to transition to menu
  *   - Manages background music (starts on user interaction)
+ *
+ * • MenuScene - Main menu with decorative asteroids
+ *   - Shows menu items stacked vertically
+ *   - Spawns animated asteroids for visual effect (same as title)
+ *   - Supports mouse and keyboard navigation
+ *   - Transitions to GameplayScene or other scenes based on selection
+ *
+ * • HowToPlayScene - Game instructions and controls screen
+ *   - Shows instructions and control mappings
+ *   - Spawns animated asteroids for visual effect (same as title/menu)
+ *   - Styled keyboard keys with line-art design
+ *   - Returns to menu on ESC key press
  *
  * • GameplayScene - Core game loop with wave management
  *   - Spawns player ship
@@ -60,5 +72,7 @@
  */
 
 export { TitleScene } from "./title-scene.ts";
+export { MenuScene } from "./menu-scene.ts";
+export { HowToPlayScene } from "./how-to-play-scene.ts";
 export { GameplayScene } from "./gameplay.ts";
 export { EnteringZoneScene } from "./entering-zone-scene.ts";

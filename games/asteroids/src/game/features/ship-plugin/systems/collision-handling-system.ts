@@ -110,12 +110,13 @@ export class CollisionHandlingSystem {
         visible.enabled = false;
       }
 
-      console.log("[CollisionHandling] Player destroyed. Scheduling respawn in 3 seconds...");
+      console.log("[CollisionHandling] Player destroyed. Emitting respawn event...");
 
-      // Schedule respawn after 3 seconds
-      setTimeout(() => {
-        this.respawnShipAfterCooldown(world);
-      }, 3000);
+      // Emit respawn event - PlayerRespawnSystem will handle the actual respawn
+      // This goes through the centralized respawn logic which handles wave transitions
+      world.emitEvent("respawn_player", {
+        position: [0, 0, 0] as [number, number, number],
+      });
     } else {
       // Game over
       world.emitEvent("game_over", {
@@ -133,40 +134,6 @@ export class CollisionHandlingSystem {
 
       this.shipEntityId = null;
     }
-  }
-
-  private respawnShip(world: World): void {
-    if (this.shipEntityId === null) return;
-
-    const shipComponent = world.get<ShipComponent>(
-      this.shipEntityId,
-      ShipComponent,
-    );
-
-    // Ensure invincibility is maintained during respawn (should already be true from collision)
-    if (shipComponent) {
-      shipComponent.isInvincible = true;
-      console.log("[CollisionHandling] Ship respawning with invincibility enabled");
-    }
-
-    // Make the ship visible again
-    const visible = world.get<Visible>(this.shipEntityId, Visible);
-    if (visible) {
-      visible.enabled = true;
-    }
-
-    // Reset ship to center
-    const transform = world.get<Transform>(this.shipEntityId, Transform);
-    if (transform) {
-      transform.position = [0, 0, 0];
-      transform.rotation = [0, 0, 0];
-    }
-
-    // Emit respawn event
-    world.emitEvent("ship_respawned", {
-      lives: shipComponent?.lives ?? 0,
-      position: [0, 0, 0] as [number, number, number],
-    });
   }
 
   private respawnShipAfterCooldown(world: World): void {

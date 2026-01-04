@@ -1,8 +1,10 @@
 import type { World } from "@engine/core/world.ts";
+import type { GUID } from "@engine/utils/guid.ts";
 import { ShipComponent } from "../../ship-plugin/components/ship.ts";
 import { Transform } from "@engine/features/transform-plugin/mod.ts";
 import { Velocity } from "../../ship-plugin/components/velocity.ts";
 import { Visible } from "@engine/features/render-plugin/mod.ts";
+import { SceneManager } from "@engine/resources/scene-manager.ts";
 
 interface WorldEvent {
   type: string;
@@ -15,9 +17,13 @@ interface WorldEvent {
  * - Listens for respawn_player events
  * - Moves player ship to the specified position
  * - Resets velocity and rotation
+ * - Cancels pending respawn if scene transitions occur
  */
 export class PlayerRespawnSystem {
   private respawnListener?: (event: WorldEvent) => void;
+  private waveCompleteListener?: (event: WorldEvent) => void;
+  private waveCompleted: boolean = false;
+  private waveCompleteResetTimer: number | null = null;
 
   /**
    * Setup event listeners during initialization
@@ -27,7 +33,12 @@ export class PlayerRespawnSystem {
       this.onRespawnPlayer(world, event);
     };
 
+    this.waveCompleteListener = (event) => {
+      this.onWaveComplete(world, event);
+    };
+
     world.onEvent("respawn_player", this.respawnListener);
+    world.onEvent("wave_complete", this.waveCompleteListener);
   }
 
   /**
@@ -46,6 +57,15 @@ export class PlayerRespawnSystem {
 
     if (!position) {
       console.warn("[PlayerRespawnSystem] No position specified for respawn");
+      return;
+    }
+
+    // If a wave just completed, skip this respawn - it's from a collision death
+    // that triggered the wave completion. Let WaveInitializationSystem handle the respawn.
+    if (this.waveCompleted) {
+      console.log(
+        "[PlayerRespawnSystem] Skipping respawn: wave just completed, WaveInitializationSystem will handle respawn",
+      );
       return;
     }
 
@@ -84,6 +104,54 @@ export class PlayerRespawnSystem {
   }
 
   /**
+   * Called when a wave completes
+   * Track this so we can skip any collision respawns that triggered the completion
+   */
+  private onWaveComplete(world: World, _event: WorldEvent): void {
+    this.waveCompleted = true;
+    console.log("[PlayerRespawnSystem] Wave complete detected - collision respawns will be skipped");
+
+    // Reset the flag after a short delay so normal respawns work again
+    // (in case a respawn_player event comes from somewhere else after wave complete)
+    if (this.waveCompleteResetTimer !== null) {
+      clearTimeout(this.waveCompleteResetTimer);
+    }
+    this.waveCompleteResetTimer = setTimeout(() => {
+      this.waveCompleted = false;
+      this.waveCompleteResetTimer = null;
+    }, 500) as unknown as number;
+  }
+
+  /**
+   * Called when a scene transition begins (entering_zone event)
+   * Cancels any pending respawn since the game state is transitioning
+   */
+  private onSceneTransition(world: World, _event: WorldEvent): void {
+    if (this.pendingRespawnTimerId !== null) {
+      clearTimeout(this.pendingRespawnTimerId);
+      this.pendingRespawnTimerId = null;
+      console.log("[PlayerRespawnSystem] Cancelled pending respawn due to scene transition");
+    }
+    
+    console.log("[PlayerRespawnSystem] Scene transition started - ignoring respawns");
+  }
+
+  /**
+   * Called when gameplay scene is resumed after a transition
+   * This is when we can re-enable respawning
+   */
+  private onSceneResume(world: World, event: WorldEvent): void {
+    const eventData = event.data as Record<string, unknown>;
+    const scene = eventData.scene as any;
+    
+    // Only clear the transition flag when GameplayScene is resumed
+    if (scene && scene.id === "asteroids-main") {
+      this.isInSceneTransition = false;
+      console.log("[PlayerRespawnSystem] Scene resumed - respawning re-enabled");
+    }
+  }
+
+  /**
    * Perform the actual respawn (called after delay)
    */
   private performRespawn(
@@ -91,6 +159,20 @@ export class PlayerRespawnSystem {
     shipEntity: unknown,
     position: [number, number, number],
   ): void {
+    // Get scene manager
+    const sceneManager = world.getResource<SceneManager>("sceneManager");
+    
+    if (!sceneManager || !world.entityExists(shipEntity as GUID)) {
+      return;
+    }
+
+    const currentScene = sceneManager.getCurrentScene();
+    
+    // If GameplayScene is not the current scene, don't respawn
+    if (!currentScene || currentScene.id !== "asteroids-main") {
+      return;
+    }
+
     // Make ship visible
     const visible = world.get<Visible>(shipEntity, Visible);
     if (visible) {
@@ -134,5 +216,10 @@ export class PlayerRespawnSystem {
    */
   dispose(): void {
     this.respawnListener = undefined;
+    this.waveCompleteListener = undefined;
+    if (this.waveCompleteResetTimer !== null) {
+      clearTimeout(this.waveCompleteResetTimer);
+      this.waveCompleteResetTimer = null;
+    }
   }
 }

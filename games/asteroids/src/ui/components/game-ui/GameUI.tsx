@@ -7,6 +7,8 @@ import type { PauseState } from "../../../game/resources/pause-state.ts";
 import { useSceneState } from "../../../hooks/useSceneState.ts";
 import { usePauseState } from "../../../hooks/usePauseState.ts";
 import { Title } from "../title/Title.tsx";
+import { Menu } from "../menu/Menu.tsx";
+import { HowToPlay } from "../how-to-play/HowToPlay.tsx";
 import { EnteringZone } from "../entering-zone/EnteringZone.tsx";
 import { Hud } from "../hud/Hud.tsx";
 import { DebugInfo } from "../debug-info/DebugInfo.tsx";
@@ -51,6 +53,22 @@ export function GameUI({ world, sceneManager, isLoading, loadProgress, currentAs
   }
   const isPaused = usePauseState(pauseState);
 
+  // Control canvas pointer events based on scene - disable during menu/title screens
+  useEffect(() => {
+    const canvas = document.querySelector("canvas") as HTMLCanvasElement | null;
+    if (canvas) {
+      const sceneId = currentScene?.id;
+      console.log("[GameUI] Scene changed to:", sceneId);
+      if (sceneId === "asteroids-title" || sceneId === "asteroids-menu") {
+        canvas.style.pointerEvents = "none";
+        console.log("[GameUI] Set canvas pointer-events to none");
+      } else {
+        canvas.style.pointerEvents = "auto";
+        console.log("[GameUI] Set canvas pointer-events to auto");
+      }
+    }
+  }, [currentScene?.id]);
+
   // Show loading screen while assets load
   useEffect(() => {
     if (isLoading) {
@@ -71,6 +89,7 @@ export function GameUI({ world, sceneManager, isLoading, loadProgress, currentAs
  *
  * This function handles the scene-to-view mapping:
  * - "asteroids-title" → TitleScene
+ * - "asteroids-menu" → MenuScene
  * - "asteroids-main" → GameplayScene
  * - "asteroids-entering-zone" → EnteringZoneScene
  *
@@ -93,6 +112,12 @@ function renderScene(currentScene: Scene | null, world: World, sceneManager: Sce
   switch (currentScene.id) {
     case "asteroids-title":
       return <Title />;
+
+    case "asteroids-menu":
+      return <Menu world={world} sceneManager={sceneManager} />;
+
+    case "asteroids-how-to-play":
+      return <HowToPlay />;
 
     case "asteroids-main":
       return (

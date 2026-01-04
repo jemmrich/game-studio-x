@@ -89,7 +89,8 @@ export class PlayerInputSystem {
       // Only fire if enough time has passed since last shot
       if (now - this.lastMissileFireTime >= this.missileFireCooldown) {
         const transform = world.get<Transform>(this.shipEntityId, Transform);
-        if (transform) {
+        // Prevent shooting when invincible
+        if (transform && !shipComponent.isInvincible) {
           // Emit missile spawn event
           world.emitEvent("missile_spawn_requested", {
             position: transform.position,

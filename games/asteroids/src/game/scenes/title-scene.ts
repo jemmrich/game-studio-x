@@ -5,7 +5,7 @@ import { SceneManager } from "@engine/resources/scene-manager.ts";
 import { Tag } from "@engine/components/tag.ts";
 import { spawnAsteroid, AsteroidRenderSystem } from "../features/asteroid-plugin/mod.ts";
 import { BasicMaterial } from "@engine/features/render-plugin/mod.ts";
-import { GameplayScene } from "./gameplay.ts";
+import { MenuScene } from "./menu-scene.ts";
 import { AudioSystem } from "../systems/audio-system.ts";
 import * as THREE from "three";
 
@@ -149,12 +149,12 @@ export class TitleScene extends BaseScene {
   }
 
   /**
-   * Handle keyboard input to transition to gameplay
+   * Handle keyboard input to transition to menu
    *
    * When the user presses any key:
    * 1. Stop background music
    * 2. Emit scene-transition event (for UI)
-   * 3. Load GameplayScene via SceneManager
+   * 3. Load MenuScene via SceneManager
    * 4. Remove keyboard listener
    */
   private setupKeyboardListener(world: World): void {
@@ -164,11 +164,11 @@ export class TitleScene extends BaseScene {
       this.backgroundMusic = null;
 
       // Emit event for React to update UI
-      world.emitEvent("scene-transition", { view: "gameplay" });
+      world.emitEvent("scene-transition", { view: "menu" });
 
       const sceneManager = world.getResource<SceneManager>("sceneManager");
       if (sceneManager) {
-        sceneManager.loadScene(new GameplayScene(this.threeJsScene));
+        sceneManager.loadScene(new MenuScene(this.threeJsScene));
       }
       // Remove listener after first key press
       globalThis.removeEventListener("keydown", handleKeyPress);
