@@ -42,6 +42,7 @@ export function installAsteroidPlugin(world: World): {
   movementSystem: AsteroidMovementSystem;
   collisionSystem: AsteroidCollisionSystem;
   destructionSystem: AsteroidDestructionSystem;
+  spawningSystem: AsteroidSpawningSystem;
   fadeInSystem: AsteroidFadeInSystem;
 } {
   // If already installed, return the cached systems without creating duplicates

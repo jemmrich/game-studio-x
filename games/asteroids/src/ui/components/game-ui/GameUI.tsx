@@ -4,13 +4,22 @@ import { Title } from "../title/Title.tsx";
 import { EnteringZone } from "../entering-zone/EnteringZone.tsx";
 import { Hud } from "../hud/Hud.tsx";
 import { DebugInfo } from "../debug-info/DebugInfo.tsx";
+import { LoadingScreen } from "../loading-screen/LoadingScreen.tsx";
 
 interface GameUIProps {
   world: World;
+  isLoading: boolean;
+  loadProgress: number;
+  currentAsset: string | null;
 }
 
-export function GameUI({ world }: GameUIProps) {
+export function GameUI({ world, isLoading, loadProgress, currentAsset }: GameUIProps) {
   const [currentView, setCurrentView] = useState<"title" | "gameplay" | "enteringZone">("title");
+
+  // Show loading screen if assets are still loading
+  if (isLoading) {
+    return <LoadingScreen progress={loadProgress} currentAsset={currentAsset} />;
+  }
 
   useEffect(() => {
     // Listen for scene transitions

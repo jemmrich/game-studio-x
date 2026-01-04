@@ -19,7 +19,6 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 2rem;
   text-align: center;
 }
 
@@ -27,14 +26,12 @@
   font-size: 8rem;
   color: #ffffff;
   margin: 0;
-  line-height: 1;
 }
 
 .press-any-key {
   font-size: 2.5rem;
   font-weight: 700;
   color: #ff0000;
-  letter-spacing: 0.1em;
   margin: 0;
   animation: fadeInOut 1.5s ease-in-out infinite;
 }

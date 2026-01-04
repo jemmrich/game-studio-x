@@ -1,4 +1,4 @@
-import { StrictMode } from "react";
+import { StrictMode, useState } from "react";
 import { createRoot } from "react-dom/client";
 import "./ui/index.css";
 import { GameUI } from "./ui/components/game-ui/GameUI.tsx";
@@ -20,18 +20,90 @@ import { installMissilePlugin, MissileRenderSystem } from "./game/features/missi
 import { installAsteroidPlugin, AsteroidRenderSystem } from "./game/features/asteroid-plugin/mod.ts";
 import { installWaveManagerPlugin } from "./game/features/wave-manager-plugin/mod.ts";
 import { installEnteringZoneEffectPlugin } from "./game/features/entering-zone-effect-plugin/mod.ts";
+import { AssetLoader } from "./game/resources/asset-loader.ts";
 import * as THREE from "three";
 
-function main() {
-  const world = new World();
+/**
+ * App component that manages loading state
+ */
+function App() {
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadProgress, setLoadProgress] = useState(0);
+  const [currentAsset, setCurrentAsset] = useState<string | null>(null);
+  const [world] = useState(() => new World());
 
-  // Render React UI with world reference
-  createRoot(document.getElementById("ui")!).render(
+  // Initialize asset loading on mount
+  useState(() => {
+    initializeGame(world, setIsLoading, setLoadProgress, setCurrentAsset);
+  });
+
+  return (
     <StrictMode>
-      <GameUI world={world} />
-    </StrictMode>,
+      <GameUI 
+        world={world} 
+        isLoading={isLoading}
+        loadProgress={loadProgress}
+        currentAsset={currentAsset}
+      />
+    </StrictMode>
   );
+}
 
+/**
+ * Initialize game with asset preloading
+ */
+async function initializeGame(
+  world: World,
+  setIsLoading: (loading: boolean) => void,
+  setLoadProgress: (progress: number) => void,
+  setCurrentAsset: (asset: string | null) => void,
+) {
+  console.log("[Game] Starting initialization...");
+
+  // Create and configure asset loader
+  const assetLoader = new AssetLoader();
+
+  // Register all game assets
+  assetLoader.registerAssets([
+    // Audio files
+    { id: 'background', type: 'audio', url: '/background.mp3' },
+    { id: 'explosion', type: 'audio', url: '/explosion.mp3' },
+    { id: 'missile', type: 'audio', url: '/missile.mp3' },
+    { id: 'warp', type: 'audio', url: '/warp.mp3' },
+    // Font files
+    { id: 'Hyperspace', type: 'font', url: '/hyperspace.ttf' },
+  ]);
+
+  // Setup progress callbacks
+  assetLoader.onProgress((progress) => {
+    setLoadProgress(progress.percentage);
+    setCurrentAsset(progress.currentAsset);
+  });
+
+  // Load all assets
+  try {
+    await assetLoader.loadAll();
+    console.log("[Game] All assets loaded, initializing game world...");
+
+    // Store asset loader in world resources for game systems to access
+    world.addResource("assetLoader", assetLoader);
+
+    // Initialize the game world
+    setupGameWorld(world);
+
+    // Mark loading as complete
+    setIsLoading(false);
+    console.log("[Game] Initialization complete!");
+  } catch (error) {
+    console.error("[Game] Failed to initialize:", error);
+    // In a production game, you might want to show an error screen here
+  }
+}
+
+/**
+ * Setup the game world with all systems and scenes
+ */
+function setupGameWorld(world: World) {
   // Time resource
   const time = new Time();
   world.addResource("time", time);
@@ -153,6 +225,14 @@ function main() {
     camera.updateProjectionMatrix();
   });
 
+  // Start game loop
+  startGameLoop(world, time, pauseSystem, pauseState);
+}
+
+/**
+ * Start the main game loop
+ */
+function startGameLoop(world: World, time: Time, pauseSystem: PauseSystem, pauseState: PauseState) {
   let lastTime = performance.now();
 
   function loop(now: number) {
@@ -180,6 +260,11 @@ function main() {
   }
 
   requestAnimationFrame(loop);
+}
+
+// Initialize the app
+function main() {
+  createRoot(document.getElementById("ui")!).render(<App />);
 }
 
 main();
