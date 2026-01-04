@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import type { World } from "@engine/core/world.ts";
+import type { WaveManager } from "../../../game/resources/wave-manager.ts";
 import { Title } from "../title/Title.tsx";
 import { EnteringZone } from "../entering-zone/EnteringZone.tsx";
 import { Hud } from "../hud/Hud.tsx";
@@ -15,6 +16,7 @@ interface GameUIProps {
 
 export function GameUI({ world, isLoading, loadProgress, currentAsset }: GameUIProps) {
   const [currentView, setCurrentView] = useState<"title" | "gameplay" | "enteringZone">("title");
+  const [waveNumber, setWaveNumber] = useState(1);
 
   // Setup event listeners once the component mounts (regardless of loading state)
   useEffect(() => {
@@ -25,6 +27,9 @@ export function GameUI({ world, isLoading, loadProgress, currentAsset }: GameUIP
     });
 
     world.onEvent("entering_zone", () => {
+      // Get the current wave number from WaveManager
+      const waveManager = world.getResource<WaveManager>("waveManager");
+      setWaveNumber(waveManager?.currentWaveNumber ?? 1);
       setCurrentView("enteringZone");
     });
 
@@ -44,14 +49,14 @@ export function GameUI({ world, isLoading, loadProgress, currentAsset }: GameUIP
     case "enteringZone":
       return (
         <>
-          <EnteringZone zoneNumber={1} />
+          <EnteringZone zoneNumber={waveNumber} />
           <DebugInfo world={world} />
         </>
       );
     case "gameplay":
       return (
         <>
-          <Hud />
+          <Hud world={world} />
           <DebugInfo world={world} />
         </>
       );

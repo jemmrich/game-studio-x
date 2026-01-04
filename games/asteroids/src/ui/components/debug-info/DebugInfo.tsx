@@ -12,6 +12,7 @@ interface DebugState {
   lives: number;
   isInvincible: boolean;
   asteroidCount: number;
+  waveNumber: number;
 }
 
 export function DebugInfo({ world }: DebugInfoProps) {
@@ -19,6 +20,7 @@ export function DebugInfo({ world }: DebugInfoProps) {
     lives: 0,
     isInvincible: false,
     asteroidCount: 0,
+    waveNumber: 1,
   });
 
   useEffect(() => {
@@ -41,11 +43,13 @@ export function DebugInfo({ world }: DebugInfoProps) {
       // Get asteroid count from WaveManager
       const waveManager = world.getResource<WaveManager>("waveManager");
       const asteroidCount = waveManager?.asteroidCount ?? 0;
+      const waveNumber = waveManager?.currentWaveNumber ?? 1;
 
       setDebugState({
         lives,
         isInvincible,
         asteroidCount,
+        waveNumber,
       });
     };
 
@@ -56,6 +60,10 @@ export function DebugInfo({ world }: DebugInfoProps) {
 
   return (
     <div className="debug-info">
+      <div className="debug-item">
+        <span className="debug-label">Wave:</span>
+        <span className="debug-value">{debugState.waveNumber}</span>
+      </div>
       <div className="debug-item">
         <span className="debug-label">Lives:</span>
         <span className="debug-value">{debugState.lives}</span>
