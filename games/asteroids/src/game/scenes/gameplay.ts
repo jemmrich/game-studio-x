@@ -107,12 +107,16 @@ export class GameplayScene extends BaseScene {
       this.onEnteringZone(world, event);
     });
 
-    // Emit start_wave event to initialize Wave 1
-    // InitialZoneEntrySystem listens for this and emits entering_zone
-    // which triggers the warp effect
-    world.emitEvent("start_wave", {
-      waveNumber: 1,
-    });
+    // Emit start_wave event AFTER scene is fully loaded
+    // We use setTimeout to defer this to the next frame, ensuring:
+    // 1. This scene's init() completes and scene is marked as loaded
+    // 2. Scene stack is properly initialized before entering_zone event fires
+    // 3. When entering_zone fires, GameplayScene is ready to push EnteringZoneScene
+    setTimeout(() => {
+      world.emitEvent("start_wave", {
+        waveNumber: 1,
+      });
+    }, 0);
   }
 
   /**

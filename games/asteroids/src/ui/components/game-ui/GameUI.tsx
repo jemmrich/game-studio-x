@@ -61,11 +61,22 @@ export function GameUI({ world, sceneManager, isLoading, loadProgress, currentAs
  * - "asteroids-title" → TitleScene
  * - "asteroids-main" → GameplayScene
  * - "asteroids-entering-zone" → EnteringZoneScene
+ *
+ * For overlaid scenes (e.g., EnteringZoneScene on top of GameplayScene),
+ * both scenes are rendered with the overlay on top.
  */
 function renderScene(currentScene: Scene | null, world: World, sceneManager: SceneManager) {
   if (!currentScene) {
     return <div className="no-scene">No active scene</div>;
   }
+
+  // Get the full scene stack to check for overlays
+  const sceneStack = sceneManager.getSceneStack();
+  const hasUnderlying = sceneStack.length > 1;
+
+  // Query wave number from WaveManager for display
+  const waveManager = world.getResource<WaveManager>("waveManager");
+  const waveNumber = waveManager?.currentWaveNumber ?? 1;
 
   switch (currentScene.id) {
     case "asteroids-title":
@@ -80,14 +91,9 @@ function renderScene(currentScene: Scene | null, world: World, sceneManager: Sce
       );
 
     case "asteroids-entering-zone":
-      // Query wave number from WaveManager for display
-      const waveManager = world.getResource<WaveManager>("waveManager");
-      const waveNumber = waveManager?.currentWaveNumber ?? 1;
-
       return (
         <>
           <EnteringZone zoneNumber={waveNumber} />
-          <DebugInfo world={world} />
         </>
       );
 

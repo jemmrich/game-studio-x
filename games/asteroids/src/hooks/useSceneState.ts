@@ -43,16 +43,31 @@ export function useSceneState(sceneManager: SceneManager): Scene | null {
 
   useEffect(() => {
     // Subscribe to state changes
-    // Note: SceneManager's subscribeToStateChanges notifies when state changes
-    // We update React state when this happens
     const unsubscribe = sceneManager.subscribeToStateChanges(() => {
       // Get the new current scene and update React state
       const newScene = sceneManager.getCurrentScene();
       setCurrentScene(newScene);
     });
 
-    // Cleanup subscription on unmount
-    return unsubscribe;
+    // ALSO set up a polling mechanism to detect scene stack changes
+    // This is needed because the scene manager doesn't notify when getCurrentScene()
+    // changes if the state hasn't changed (e.g., when popping a scene)
+    const pollInterval = setInterval(() => {
+      const newScene = sceneManager.getCurrentScene();
+      setCurrentScene((prevScene) => {
+        // Only update if the scene actually changed (by reference)
+        if (prevScene !== newScene) {
+          return newScene;
+        }
+        return prevScene;
+      });
+    }, 100); // Poll every 100ms for scene changes
+
+    // Cleanup both subscription and polling
+    return () => {
+      unsubscribe();
+      clearInterval(pollInterval);
+    };
   }, [sceneManager]);
 
   return currentScene;

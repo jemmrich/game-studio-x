@@ -25,7 +25,7 @@ import type { GUID } from "@engine/utils/guid.ts";
  */
 export class EnteringZoneScene extends BaseScene {
   private waveNumber: number;
-  private effectDuration: number = 3000; // milliseconds
+  private effectDuration: number = 4000; // milliseconds - MUST MATCH EnteringZoneEffectSystem's animationDuration
   private startTime: number = 0;
   private autoPopTimerId: number | null = null;
 

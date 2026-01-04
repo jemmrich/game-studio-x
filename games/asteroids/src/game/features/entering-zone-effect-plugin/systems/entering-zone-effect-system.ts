@@ -156,10 +156,9 @@ export class EnteringZoneEffectSystem {
         // Remove entity from world
         world.destroyEntity(entity);
 
-        // Emit completion event
-        world.emitEvent("entering_zone_effect_complete", {
-          zoneNumber: effect.zoneNumber,
-        });
+        // Note: entering_zone_effect_complete event is emitted by EnteringZoneScene.dispose()
+        // when the scene is popped from the stack, not here. This keeps scene lifecycle
+        // management centralized in the scene manager.
       }
     }
   }
@@ -245,7 +244,7 @@ export class EnteringZoneEffectSystem {
       sizeAttenuation: true,
       transparent: true,
       depthWrite: false,
-      opacity: 1.0, // Start fully opaque
+      opacity: 0.0, // Start fully transparent - will fade in during animation
     });
 
     const mesh = new THREE.Points(geometry, material);

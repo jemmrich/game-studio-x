@@ -5,6 +5,15 @@ import { GameUI } from "./ui/components/game-ui/GameUI.tsx";
 
 import { Time, World, SceneManager, SceneLifecycleSystem } from "@engine/mod.ts";
 import {
+  SCENE_EVENTS,
+  type SceneTransitionStartEvent,
+  type SceneTransitionCompleteEvent,
+  type SceneLoadEvent,
+  type SceneUnloadEvent,
+  type ScenePauseEvent,
+  type SceneResumeEvent,
+} from "@engine/core/scene-events.ts";
+import {
   installTransformPlugin,
 } from "@engine/features/transform-plugin/mod.ts";
 import {
@@ -31,7 +40,12 @@ function App() {
   const [loadProgress, setLoadProgress] = useState(0);
   const [currentAsset, setCurrentAsset] = useState<string | null>(null);
   const [world] = useState(() => new World());
-  const [sceneManager] = useState(() => world.getResource<SceneManager>("sceneManager") || new SceneManager());
+  const [sceneManager] = useState(() => {
+    // Create sceneManager immediately and add to world
+    const sm = new SceneManager();
+    world.addResource("sceneManager", sm);
+    return sm;
+  });
 
   // Initialize asset loading on mount
   useState(() => {
@@ -110,9 +124,8 @@ function setupGameWorld(world: World) {
   const time = new Time();
   world.addResource("time", time);
 
-  // Scene Manager
-  const sceneManager = new SceneManager();
-  world.addResource("sceneManager", sceneManager);
+  // Scene Manager (already created and added in App component)
+  const sceneManager = world.getResource<SceneManager>("sceneManager")!;
 
   // Pause State resource
   const pauseState = new PauseState();
@@ -217,7 +230,71 @@ function setupGameWorld(world: World) {
   const currentScene = new TitleScene(threeScene);
   sceneManager.loadScene(currentScene);
 
-  // Handle window resize
+  // ═══════════════════════════════════════════════════════════════════
+  // Phase 4: Observable State Machine Events
+  // ═══════════════════════════════════════════════════════════════════
+  // Subscribe to unified scene state change events through World's event system.
+  // All scene transitions flow through the World event bus, providing:
+  // - Type-safe event handling
+  // - Single event subscription point
+  // - Easy analytics/logging integration
+  // - Events are discoverable and documented
+  // ═══════════════════════════════════════════════════════════════════
+  
+  // Subscribe to scene transition events
+  world.onEvent<SceneTransitionStartEvent>(
+    SCENE_EVENTS.TRANSITION_START,
+    (event) => {
+      console.log(
+        `[Scene] Transition started: ${event.data.from?.id ?? "none"} → ${event.data.to.id} (type: ${event.data.transitionType})`
+      );
+    }
+  );
+
+  world.onEvent<SceneTransitionCompleteEvent>(
+    SCENE_EVENTS.TRANSITION_COMPLETE,
+    (event) => {
+      console.log(
+        `[Scene] Transition complete: ${event.data.from?.id ?? "none"} → ${event.data.to.id} (type: ${event.data.transitionType})`
+      );
+    }
+  );
+
+  world.onEvent<SceneLoadEvent>(
+    SCENE_EVENTS.LOAD,
+    (event) => {
+      console.log(`[Scene] Scene loaded: ${event.data.scene.id}`);
+    }
+  );
+
+  world.onEvent<SceneUnloadEvent>(
+    SCENE_EVENTS.UNLOAD,
+    (event) => {
+      console.log(`[Scene] Scene unloaded: ${event.data.scene.id}`);
+    }
+  );
+
+  world.onEvent<ScenePauseEvent>(
+    SCENE_EVENTS.PAUSE,
+    (event) => {
+      console.log(`[Scene] Scene paused: ${event.data.scene.id}`);
+    }
+  );
+
+  world.onEvent<SceneResumeEvent>(
+    SCENE_EVENTS.RESUME,
+    (event) => {
+      console.log(`[Scene] Scene resumed: ${event.data.scene.id}`);
+    }
+  );
+
+  // Note: Additional event listeners can be added here for analytics, logging, or other side effects
+  // Examples:
+  // - Track scene transitions for analytics
+  // - Pause audio/music on scene pause
+  // - Save state on scene unload
+  // - Trigger post-processing effects on transitions
+  // All without modifying the scene classes or GameUI component!
   globalThis.addEventListener("resize", () => {
     // Update Three.js camera aspect ratio
     const camera = rendererSystem.getCamera();

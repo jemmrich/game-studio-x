@@ -6,21 +6,8 @@ interface EnteringZoneProps {
 }
 
 export const EnteringZone = ({ zoneNumber }: EnteringZoneProps) => {
-  const [isFadingOut, setIsFadingOut] = useState(false);
-
-  useEffect(() => {
-    // TODO: we probably want to make this duration configurable or something 
-    // because it technically should match the effect duration
-    // Start fade out after 3 seconds
-    const fadeOutTimer = setTimeout(() => {
-      setIsFadingOut(true);
-    }, 3000);
-
-    return () => clearTimeout(fadeOutTimer);
-  }, []);
-
   return (
-    <div className={`enteringZoneContainer ${isFadingOut ? 'fade-out' : ''}`}>
+    <div className="enteringZoneContainer">
       <div className="enteringZoneText">
         Entering
         <br />
