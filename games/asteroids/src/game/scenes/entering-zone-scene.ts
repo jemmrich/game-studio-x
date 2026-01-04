@@ -27,7 +27,7 @@ export class EnteringZoneScene extends BaseScene {
   private waveNumber: number;
   private effectDuration: number = 3000; // milliseconds
   private startTime: number = 0;
-  private effectCompleteListener?: () => void;
+  private autoPopTimerId: number | null = null;
 
   /**
    * Create an entering zone scene for the given wave number
@@ -69,12 +69,10 @@ export class EnteringZoneScene extends BaseScene {
 
     // Schedule automatic pop when effect completes
     // This removes this scene from the stack and returns to GameplayScene
-    this.effectCompleteListener = () => {
+    this.autoPopTimerId = window.setTimeout(() => {
       this.autoPopScene(world);
-    };
-
-    // Set up timer to pop after effect duration
-    setTimeout(this.effectCompleteListener, this.effectDuration);
+      this.autoPopTimerId = null;
+    }, this.effectDuration);
   }
 
   /**
@@ -129,8 +127,9 @@ export class EnteringZoneScene extends BaseScene {
    */
   dispose(world: World): void {
     // Cancel timer if effect hasn't completed yet
-    if (this.effectCompleteListener) {
-      this.effectCompleteListener = undefined;
+    if (this.autoPopTimerId !== null) {
+      window.clearTimeout(this.autoPopTimerId);
+      this.autoPopTimerId = null;
     }
 
     // Emit event to notify systems the effect is ending

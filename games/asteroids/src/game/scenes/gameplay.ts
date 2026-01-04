@@ -41,9 +41,9 @@ interface WorldEvent {
 export class GameplayScene extends BaseScene {
   private shipEntityId: GUID | null = null;
   private threeJsScene: THREE.Scene;
-  private effectCompleteListener?: (event: WorldEvent) => void;
-  private waveCompleteListener?: (event: WorldEvent) => void;
-  private enteringZoneListener?: (event: WorldEvent) => void;
+  private unsubscribeEffectComplete?: () => void;
+  private unsubscribeWaveComplete?: () => void;
+  private unsubscribeEnteringZone?: () => void;
 
   constructor(threeJsScene: THREE.Scene) {
     super("asteroids-main");
@@ -92,23 +92,20 @@ export class GameplayScene extends BaseScene {
     }
 
     // Setup listener for warp effect completion
-    this.effectCompleteListener = (event) => {
+    this.unsubscribeEffectComplete = world.onEvent("entering_zone_effect_complete", (event) => {
       this.onEnteringZoneEffectComplete(world, event);
-    };
-    world.onEvent("entering_zone_effect_complete", this.effectCompleteListener);
+    });
 
     // Setup listener for wave completion
-    this.waveCompleteListener = (event) => {
+    this.unsubscribeWaveComplete = world.onEvent("wave_complete", (event) => {
       this.onWaveComplete(world, event);
-    };
-    world.onEvent("wave_complete", this.waveCompleteListener);
+    });
 
     // Setup listener for entering zone start
     // This allows us to push EnteringZoneScene onto scene stack for wave transitions
-    this.enteringZoneListener = (event) => {
+    this.unsubscribeEnteringZone = world.onEvent("entering_zone", (event) => {
       this.onEnteringZone(world, event);
-    };
-    world.onEvent("entering_zone", this.enteringZoneListener);
+    });
 
     // Emit start_wave event to initialize Wave 1
     // InitialZoneEntrySystem listens for this and emits entering_zone
@@ -170,14 +167,15 @@ export class GameplayScene extends BaseScene {
    * Removes all event listeners and cleans up entities tagged with this scene
    */
   dispose(): void {
-    if (this.effectCompleteListener) {
-      this.effectCompleteListener = undefined;
+    // Unsubscribe from all events
+    if (this.unsubscribeEffectComplete) {
+      this.unsubscribeEffectComplete();
     }
-    if (this.waveCompleteListener) {
-      this.waveCompleteListener = undefined;
+    if (this.unsubscribeWaveComplete) {
+      this.unsubscribeWaveComplete();
     }
-    if (this.enteringZoneListener) {
-      this.enteringZoneListener = undefined;
+    if (this.unsubscribeEnteringZone) {
+      this.unsubscribeEnteringZone();
     }
 
     console.log("[GameplayScene] Disposed");

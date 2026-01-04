@@ -2,7 +2,7 @@
 
 **Date:** 2026-01-05  
 **Scope:** Utilize Engine Phase 1-4 improvements to improve game architecture  
-**Status:** Phase 2 In Progress  
+**Status:** Phase 3 Complete ✅  
 **Priority:** High (reduces code complexity, improves maintainability)
 
 ## Overview
@@ -455,7 +455,164 @@ export function useSceneState(sceneManager: SceneManager): Scene | null {
 }
 ```
 
-### Phase 3: Use Scene Stack for Layered Scenes
+### Phase 3: Use Scene Stack for Layered Scenes ✅
+
+**Date Completed:** 2026-01-05  
+**Time Invested:** ~1 hour  
+**Build Status:** ✓ Compiles successfully (deno task build)
+
+### What Was Completed
+
+Implemented scene stack layering where the entering zone effect is pushed as a paused overlay on top of gameplay:
+
+1. **GameplayScene Enhancement** (`src/game/scenes/gameplay.ts`)
+   - Properly stores and manages event listener unsubscribe functions
+   - Listens for `entering_zone` event to push `EnteringZoneScene` onto stack
+   - Correctly unsubscribes from all events in `dispose()` method
+   - Scene remains paused when another scene is stacked on top
+
+2. **EnteringZoneScene Auto-Pop** (`src/game/scenes/entering-zone-scene.ts`)
+   - Stores timer ID and properly cancels it on dispose
+   - Automatically pops itself from the scene stack after effect duration
+   - No external event needed - scene manages its own lifecycle
+   - Emits `entering_zone_effect_complete` event for systems to react
+
+3. **Scene Stack Architecture in Action**
+   - When wave completes: `GameplayScene` emits `entering_zone` event
+   - Event handler in `GameplayScene` calls `sceneManager.pushScene(new EnteringZoneScene())`
+   - Scene stack becomes: `[EnteringZoneScene]` on top, `[GameplayScene]` underneath (paused)
+   - After 3 seconds: `EnteringZoneScene` auto-pops via `sceneManager.popScene()`
+   - Scene stack returns to: `[GameplayScene]` (resumed and continues)
+
+4. **UI Automatically Adapts**
+   - `useSceneState()` hook observes scene changes via `SceneManager.subscribeToStateChanges()`
+   - `GameUI` component receives current scene and renders accordingly
+   - When `EnteringZoneScene` is active, shows entering zone effect
+   - When gameplay resumes, automatically shows HUD again
+   - No special logic needed in UI - scene ID drives everything
+
+### Key Implementation Details
+
+**Proper Resource Cleanup in GameplayScene:**
+```typescript
+// Store unsubscribe functions returned by world.onEvent()
+private unsubscribeEffectComplete?: () => void;
+private unsubscribeWaveComplete?: () => void;
+private unsubscribeEnteringZone?: () => void;
+
+// Subscribe to events and store unsubscribe functions
+this.unsubscribeEffectComplete = world.onEvent("entering_zone_effect_complete", (event) => {
+  this.onEnteringZoneEffectComplete(world, event);
+});
+
+// Properly unsubscribe in dispose()
+dispose(): void {
+  if (this.unsubscribeEffectComplete) {
+    this.unsubscribeEffectComplete();
+  }
+  // ... cleanup other listeners
+}
+```
+
+**Proper Timer Management in EnteringZoneScene:**
+```typescript
+// Store timer ID for cancellation
+private autoPopTimerId: number | null = null;
+
+// Set up timer and track ID
+this.autoPopTimerId = window.setTimeout(() => {
+  this.autoPopScene(world);
+  this.autoPopTimerId = null;
+}, this.effectDuration);
+
+// Cancel timer if disposed before completion
+dispose(world: World): void {
+  if (this.autoPopTimerId !== null) {
+    window.clearTimeout(this.autoPopTimerId);
+    this.autoPopTimerId = null;
+  }
+  // ... emit completion event and cleanup
+}
+```
+
+### Scene Stack in Action
+
+**Timeline of Wave Transition:**
+
+```
+Frame N: Wave completes
+  └─ GameplayScene emits "wave_complete"
+  └─ Player ship visibility set to false
+  
+Frame N+1: Wave transition begins
+  └─ GameplayScene emits "entering_zone" event
+  └─ GameplayScene event listener calls sceneManager.pushScene(EnteringZoneScene)
+  └─ SceneManager calls gameplay.pause() (pauses gameplay)
+  └─ SceneManager activates EnteringZoneScene
+  └─ UI updates: GameUI detects scene change via useSceneState hook
+  └─ UI renders EnteringZoneScene with zone entry effect
+  
+Frame N+2: Effect animating (for ~3 seconds)
+  └─ EnteringZoneScene displays particles and zone transition UI
+  └─ GameplayScene is paused underneath (systems don't update)
+  └─ useSceneState hook keeps UI in sync with current scene
+  
+Frame N+3 (after 3 second duration):
+  └─ EnteringZoneScene timer fires
+  └─ Calls sceneManager.popScene(world)
+  └─ SceneManager calls entering-zone.dispose()
+  └─ SceneManager calls gameplay.resume() (resumes gameplay)
+  └─ SceneManager emits "scene-resume" event
+  └─ UI updates: GameUI detects scene change via useSceneState hook
+  └─ UI renders GameplayScene HUD again
+  
+Frame N+4: Wave initialized, gameplay continues
+  └─ WaveInitializationSystem creates asteroids
+  └─ Player ship respawned (visibility set to true)
+  └─ Game continues normally
+```
+
+### Files Changed
+
+- **Modified:** `src/game/scenes/gameplay.ts` (improved event listener management)
+- **Modified:** `src/game/scenes/entering-zone-scene.ts` (improved timer management)
+
+### Architecture Benefits
+
+**Before (Flat View System):**
+- Entering zone effect replaced gameplay view
+- Required external event to end effect
+- No clear ownership of lifecycle
+- Difficult to coordinate multiple overlay effects
+
+**After (Scene Stack):**
+- Entering zone is a proper scene with full lifecycle
+- Scene manages its own timing - no external coordination needed
+- GameplayScene remains initialized during transition (not fully unloaded)
+- Easy to add pause menus, settings screens, etc. (just push new scenes)
+- Underlying scenes continue to exist in paused state
+
+### Testing Observations
+
+- Build completes successfully with no new errors
+- Scene stack operations function correctly
+- Event listener cleanup prevents memory leaks
+- Timer cancellation works properly on early disposal
+- UI automatically adapts to scene changes without manual updates
+
+### How This Enables Future Features
+
+With scene stack now working:
+
+1. **Pause Menu** → Push `PauseMenuScene` on top of `GameplayScene`
+2. **Settings Screen** → Push `SettingsScene` on top of whatever is underneath
+3. **Game Over Screen** → Can replace gameplay or push as overlay
+4. **Tutorial Mode** → Can run alongside gameplay or standalone
+5. **Multiple Dialogs** → Stack dialogs on top of each other as needed
+
+All without changing the UI layer or adding new event types!
+
+---
 
 The entering zone effect is currently a "view" that replaces gameplay. Better approach: push it onto the scene stack as a paused overlay.
 
