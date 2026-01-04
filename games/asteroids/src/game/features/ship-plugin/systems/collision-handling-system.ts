@@ -5,6 +5,7 @@ import { ShipComponent } from "../components/ship.ts";
 import { Velocity } from "../components/velocity.ts";
 import { Transform } from "@engine/features/transform-plugin/mod.ts";
 import { Visible } from "@engine/features/render-plugin/mod.ts";
+import { AudioSystem } from "../../../systems/audio-system.ts";
 
 /**
  * CollisionHandlingSystem
@@ -65,6 +66,9 @@ export class CollisionHandlingSystem {
     // - Maintained until player moves or shoots after respawning
     shipComponent.isInvincible = true;
     console.log("[CollisionHandling] Player hit! Invincibility activated. Lives: " + shipComponent.lives);
+
+    // Play explosion sound
+    AudioSystem.playSound(world, 'explosion', 0.15);
 
     const { asteroidId } = collision;
 

@@ -6,12 +6,14 @@ import { Tag } from "@engine/components/tag.ts";
 import { spawnAsteroid, AsteroidRenderSystem } from "../features/asteroid-plugin/mod.ts";
 import { BasicMaterial } from "@engine/features/render-plugin/mod.ts";
 import { GameplayScene } from "./gameplay.ts";
+import { AudioSystem } from "../systems/audio-system.ts";
 import * as THREE from "three";
 
 export class TitleScene extends BaseScene {
   private threeJsScene: THREE.Scene;
   private keyListenerAdded = false;
   private asteroidEntityIds: GUID[] = [];
+  private backgroundMusic: HTMLAudioElement | null = null;
 
   constructor(threeJsScene: THREE.Scene) {
     super("asteroids-title");
@@ -96,14 +98,38 @@ export class TitleScene extends BaseScene {
     // Note: Title scene doesn't need destruction system - it just displays animated asteroids
 
     // Set up keyboard listener to switch to gameplay on any key press
+    // Also start background music on first interaction (browsers require user interaction for audio)
     if (!this.keyListenerAdded) {
       this.setupKeyboardListener(world);
       this.keyListenerAdded = true;
+      
+      // Start background music on first user interaction (required by browser autoplay policy)
+      const startMusicOnInteraction = () => {
+        console.log("[TitleScene] User interaction detected, starting background music...");
+        if (!this.backgroundMusic) {
+          this.backgroundMusic = AudioSystem.playBackgroundMusic(world, 'background', 0.3);
+          if (this.backgroundMusic) {
+            console.log("[TitleScene] Background music started successfully");
+          } else {
+            console.warn("[TitleScene] Failed to start background music");
+          }
+        }
+      };
+      
+      // Listen for any user interaction to start music
+      globalThis.addEventListener('click', startMusicOnInteraction, { once: true });
+      globalThis.addEventListener('keydown', startMusicOnInteraction, { once: true });
+      
+      console.log("[TitleScene] Waiting for user interaction to start background music...");
     }
   }
 
   private setupKeyboardListener(world: World): void {
     const handleKeyPress = () => {
+      // Stop background music
+      AudioSystem.stopBackgroundMusic(this.backgroundMusic);
+      this.backgroundMusic = null;
+
       // Emit event for React to update UI
       world.emitEvent("scene-transition", { view: "gameplay" });
 
@@ -119,6 +145,12 @@ export class TitleScene extends BaseScene {
   }
 
   dispose(world: World): void {
+    // Stop background music if still playing
+    if (this.backgroundMusic) {
+      AudioSystem.stopBackgroundMusic(this.backgroundMusic);
+      this.backgroundMusic = null;
+    }
+
     // Remove all spawned asteroids from the scene
     console.log(`[TitleScene] Disposing - cleaning up ${this.asteroidEntityIds.length} asteroids`);
     for (const asteroidId of this.asteroidEntityIds) {

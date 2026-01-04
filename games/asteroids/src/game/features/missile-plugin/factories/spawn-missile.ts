@@ -7,6 +7,7 @@ import { MissileComponent } from "../components/missile.ts";
 import { MissileGeometry } from "../components/missile-geometry.ts";
 import { MissileManager } from "../resources/mod.ts";
 import { Velocity } from "../../ship-plugin/components/velocity.ts";
+import { AudioSystem } from "../../../systems/audio-system.ts";
 
 /**
  * Spawn Interface for Missiles
@@ -105,6 +106,9 @@ export function spawnMissile(
 
   // Register missile with manager
   manager.addMissile(spawnerId, entity);
+
+  // Play missile fire sound
+  AudioSystem.playSound(world, 'missile', 0.75);
 
   return entity;
 }

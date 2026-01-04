@@ -1,6 +1,7 @@
 import type { World } from "@engine/core/world.ts";
 import type { GUID } from "@engine/utils/guid.ts";
 import { AsteroidComponent, type AsteroidSizeTier } from "../components/asteroid.ts";
+import { AudioSystem } from "../../../systems/audio-system.ts";
 
 /**
  * AsteroidDestructionSystem
@@ -13,6 +14,9 @@ import { AsteroidComponent, type AsteroidSizeTier } from "../components/asteroid
 export class AsteroidDestructionSystem {
   private scoreCallback?: (points: number) => void;
   private renderSystem?: any;
+  private recentExplosionTimes: number[] = []; // Track recent explosion sound times
+  private maxConcurrentExplosions = 4; // Maximum concurrent explosion sounds
+  private explosionCooldownMs = 50; // Minimum time between sounds in ms
 
   setScoreCallback(callback: (points: number) => void): void {
     this.scoreCallback = callback;
@@ -43,6 +47,34 @@ export class AsteroidDestructionSystem {
 
     if (!asteroidComponent) {
       return;
+    }
+
+    // Play explosion sound with throttling to prevent audio overload
+    // Clean up old timestamps (sounds that have finished playing)
+    const now = performance.now();
+    const soundDuration = 500; // Assume explosion sound is ~500ms
+    this.recentExplosionTimes = this.recentExplosionTimes.filter(
+      time => now - time < soundDuration
+    );
+
+    // Only play sound if we haven't exceeded the concurrent limit
+    const canPlaySound = this.recentExplosionTimes.length < this.maxConcurrentExplosions &&
+                         (this.recentExplosionTimes.length === 0 || 
+                          now - this.recentExplosionTimes[this.recentExplosionTimes.length - 1] >= this.explosionCooldownMs);
+
+    if (canPlaySound) {
+      // Play explosion sound with variance
+      // - Vary playback rate (pitch) between 0.8-1.2 for different sounds
+      // - Vary volume between 0.08-0.15 based on size (bigger = louder)
+      const playbackRate = 0.8 + Math.random() * 0.4; // Random between 0.8 and 1.2
+      const baseVolume = asteroidComponent.sizeTier === "large" ? 0.15 : 
+                         asteroidComponent.sizeTier === "medium" ? 0.115 : 0.08;
+      const volumeVariance = (Math.random() * 0.06) - 0.03; // +/- 0.03
+      const volume = baseVolume + volumeVariance;
+      AudioSystem.playSound(world, 'explosion', volume, playbackRate);
+      
+      // Track this explosion time
+      this.recentExplosionTimes.push(now);
     }
 
     // Award points based on size tier

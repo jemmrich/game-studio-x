@@ -14,8 +14,9 @@ export class AudioSystem {
    * @param world - The game world
    * @param soundId - The ID of the sound registered in AssetLoader
    * @param volume - Volume level (0.0 to 1.0)
+   * @param playbackRate - Playback speed/pitch (0.5 to 2.0, default 1.0). Lower = slower/deeper, higher = faster/higher pitch
    */
-  static playSound(world: World, soundId: string, volume = 1.0): void {
+  static playSound(world: World, soundId: string, volume = 1.0, playbackRate = 1.0): void {
     const assetLoader = world.getResource<AssetLoader>("assetLoader");
     
     if (!assetLoader) {
@@ -33,6 +34,7 @@ export class AudioSystem {
     // Clone the audio element so multiple instances can play simultaneously
     const sound = audioElement.cloneNode(true) as HTMLAudioElement;
     sound.volume = volume;
+    sound.playbackRate = Math.max(0.5, Math.min(2.0, playbackRate)); // Clamp between 0.5 and 2.0
     
     // Play the sound
     sound.play().catch((error) => {
@@ -96,15 +98,21 @@ export class AudioSystem {
       return null;
     }
 
-    // Use the original element for background music (don't clone)
-    audioElement.loop = true;
-    audioElement.volume = volume;
+    // Clone the audio element to avoid conflicts with the original
+    const music = audioElement.cloneNode(true) as HTMLAudioElement;
+    music.loop = true;
+    music.volume = volume;
     
-    audioElement.play().catch((error) => {
-      console.error(`[AudioSystem] Failed to play music '${musicId}':`, error);
-    });
+    // Play the music and handle the promise properly
+    const playPromise = music.play();
+    
+    if (playPromise !== undefined) {
+      playPromise.catch((error) => {
+        console.error(`[AudioSystem] Failed to play music '${musicId}':`, error);
+      });
+    }
 
-    return audioElement;
+    return music;
   }
 
   /**
