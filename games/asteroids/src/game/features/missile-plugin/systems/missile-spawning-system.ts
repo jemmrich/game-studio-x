@@ -42,7 +42,7 @@ export class MissileSpawningSystem {
         position,
         directionVector,
         shipEntityId,
-        88, // speed (pixels per second)
+        55, // speed (pixels per second)
         1500, // lifetime (milliseconds)
         10,   // max missiles per spawner
         shipVelocityVector // inherit ship's velocity

@@ -14,13 +14,29 @@ export class ShipRenderSystem {
   private scene: THREE.Scene;
   private shipMesh: THREE.Line | null = null;
   private bboxMesh: THREE.LineSegments | null = null;
+  private shieldMesh: THREE.LineLoop | null = null; // Shield circle for invincibility
   private lastGeometryHash: string = "";
   private lastBBoxHash: string = "";
   private invincibilityTime: number = 0; // Track time for fade effect
   private wasVisible: boolean = true; // Track visibility state for respawn
+  private shieldEnabled: boolean = false; // Shield is disabled by default
 
   constructor(scene: THREE.Scene) {
     this.scene = scene;
+  }
+
+  /**
+   * Enable or disable the invincibility shield
+   */
+  setShieldEnabled(enabled: boolean): void {
+    this.shieldEnabled = enabled;
+  }
+
+  /**
+   * Check if the shield is enabled
+   */
+  isShieldEnabled(): boolean {
+    return this.shieldEnabled;
   }
 
   update(world: World, dt: number): void {
@@ -37,6 +53,16 @@ export class ShipRenderSystem {
       this.scene.remove(this.shipMesh);
       this.shipMesh = null;
       this.lastGeometryHash = "";
+      
+      // Clean up shield if it exists
+      if (this.shieldMesh) {
+        const shieldGeom = (this.shieldMesh as any).geometry;
+        if (shieldGeom) shieldGeom.dispose();
+        const shieldMat = (this.shieldMesh as any).material;
+        if (shieldMat) shieldMat.dispose();
+        this.scene.remove(this.shieldMesh);
+        this.shieldMesh = null;
+      }
       return;
     }
 
@@ -109,6 +135,31 @@ export class ShipRenderSystem {
         mat.opacity = opacity;
         mat.transparent = true;
         mat.needsUpdate = true;
+
+        // Create or show shield circle (only if shields are enabled)
+        if (this.shieldEnabled) {
+          if (!this.shieldMesh) {
+            this.shieldMesh = this.createShieldMesh();
+            this.scene.add(this.shieldMesh);
+          }
+          
+          // Update shield position and rotation to match ship
+          this.shieldMesh.position.set(transform.position[0], transform.position[1], transform.position[2]);
+          this.shieldMesh.rotation.z = transform.rotation[2];
+          
+          // Apply same pulsing opacity to shield
+          (this.shieldMesh.material as THREE.LineBasicMaterial).opacity = opacity;
+          (this.shieldMesh.material as THREE.LineBasicMaterial).transparent = true;
+          (this.shieldMesh.material as THREE.LineBasicMaterial).needsUpdate = true;
+        } else if (this.shieldMesh) {
+          // Remove shield if it was created but shields are now disabled
+          const shieldGeom = (this.shieldMesh as any).geometry;
+          if (shieldGeom) shieldGeom.dispose();
+          const shieldMat = (this.shieldMesh as any).material;
+          if (shieldMat) shieldMat.dispose();
+          this.scene.remove(this.shieldMesh);
+          this.shieldMesh = null;
+        }
       } else {
         // Ship is not invincible, restore full opacity
         this.invincibilityTime = 0;
@@ -116,6 +167,16 @@ export class ShipRenderSystem {
         mat.opacity = 1;
         mat.transparent = false;
         mat.needsUpdate = true;
+
+        // Remove shield circle when invincibility ends
+        if (this.shieldMesh) {
+          const shieldGeom = (this.shieldMesh as any).geometry;
+          if (shieldGeom) shieldGeom.dispose();
+          const shieldMat = (this.shieldMesh as any).material;
+          if (shieldMat) shieldMat.dispose();
+          this.scene.remove(this.shieldMesh);
+          this.shieldMesh = null;
+        }
       }
 
       // Handle bounding box rendering
@@ -231,6 +292,35 @@ export class ShipRenderSystem {
     return lineSegments;
   }
 
+  private createShieldMesh(): THREE.LineLoop {
+    const geometry = new THREE.BufferGeometry();
+    
+    // Create a circle slightly larger than the ship
+    // Ship is approximately 30-40 units, so shield radius ~50
+    const radius = 5;
+    const segments = 32;
+    const points: number[] = [];
+
+    for (let i = 0; i <= segments; i++) {
+      const angle = (i / segments) * Math.PI * 2;
+      const x = Math.cos(angle) * radius;
+      const y = Math.sin(angle) * radius;
+      points.push(x, y, 0);
+    }
+
+    geometry.setAttribute("position", new THREE.BufferAttribute(new Float32Array(points), 3));
+
+    // White color for the shield
+    const material = new THREE.LineBasicMaterial({
+      color: 0xffffff,
+      linewidth: 1,
+      transparent: true,
+      opacity: 0.5,
+    });
+
+    return new THREE.LineLoop(geometry, material);
+  }
+
   dispose(): void {
     if (this.shipMesh) {
       const geom = (this.shipMesh as any).geometry;
@@ -238,6 +328,14 @@ export class ShipRenderSystem {
       const mat = (this.shipMesh as any).material;
       if (mat) mat.dispose();
       this.scene.remove(this.shipMesh);
+    }
+    
+    if (this.shieldMesh) {
+      const geom = (this.shieldMesh as any).geometry;
+      if (geom) geom.dispose();
+      const mat = (this.shieldMesh as any).material;
+      if (mat) mat.dispose();
+      this.scene.remove(this.shieldMesh);
     }
   }
 }

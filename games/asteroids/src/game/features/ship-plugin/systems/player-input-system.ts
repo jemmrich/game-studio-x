@@ -15,7 +15,7 @@ export class PlayerInputSystem {
   private initialized = false;
   private shipEntityId: GUID | null = null;
   private lastMissileFireTime = 0;
-  private missileFireCooldown = 120; // milliseconds between missile shots
+  private missileFireCooldown = 200; // milliseconds between missile shots
 
   constructor(shipEntityId: GUID | null = null) {
     this.shipEntityId = shipEntityId;
