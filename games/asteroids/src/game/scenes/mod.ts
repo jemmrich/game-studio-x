@@ -58,12 +58,16 @@
  * 4. All plugins installed globally in main.tsx (not per-scene)
  * 5. Scenes coordinate via World events and SceneManager
  *
+ * • GameOverScene - Game over screen when player runs out of lives
+ *   - Displays "GAME OVER" and "Press Any Key" prompt
+ *   - No asteroids, minimal visual clutter
+ *   - Transitions to menu on any key press
+ *
  * Future Extensibility:
  * ────────────────────
  * With this architecture, adding new scenes is straightforward:
  *
  * • PauseMenuScene - Pause menu that stacks on top of gameplay
- * • GameOverScene - Game over screen
  * • SettingsScene - Settings/options menu
  * • TutorialScene - Tutorial mode with special initialization
  * • DemoScene - Auto-playing demo mode
@@ -76,3 +80,4 @@ export { MenuScene } from "./menu-scene.ts";
 export { HowToPlayScene } from "./how-to-play-scene.ts";
 export { GameplayScene } from "./gameplay.ts";
 export { EnteringZoneScene } from "./entering-zone-scene.ts";
+export { GameOverScene } from "./game-over-scene.ts";

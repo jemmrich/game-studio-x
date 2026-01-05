@@ -9,6 +9,7 @@ import { usePauseState } from "../../../hooks/usePauseState.ts";
 import { Title } from "../title/Title.tsx";
 import { Menu } from "../menu/Menu.tsx";
 import { HowToPlay } from "../how-to-play/HowToPlay.tsx";
+import { GameOver } from "../game-over/GameOver.tsx";
 import { EnteringZone } from "../entering-zone/EnteringZone.tsx";
 import { Hud } from "../hud/Hud.tsx";
 import { DebugInfo } from "../debug-info/DebugInfo.tsx";
@@ -59,7 +60,7 @@ export function GameUI({ world, sceneManager, isLoading, loadProgress, currentAs
     if (canvas) {
       const sceneId = currentScene?.id;
       console.log("[GameUI] Scene changed to:", sceneId);
-      if (sceneId === "asteroids-title" || sceneId === "asteroids-menu") {
+      if (sceneId === "asteroids-title" || sceneId === "asteroids-menu" || sceneId === "asteroids-game-over") {
         canvas.style.pointerEvents = "none";
         console.log("[GameUI] Set canvas pointer-events to none");
       } else {
@@ -90,6 +91,8 @@ export function GameUI({ world, sceneManager, isLoading, loadProgress, currentAs
  * This function handles the scene-to-view mapping:
  * - "asteroids-title" → TitleScene
  * - "asteroids-menu" → MenuScene
+ * - "asteroids-how-to-play" → HowToPlayScene
+ * - "asteroids-game-over" → GameOverScene
  * - "asteroids-main" → GameplayScene
  * - "asteroids-entering-zone" → EnteringZoneScene
  *
@@ -118,6 +121,9 @@ function renderScene(currentScene: Scene | null, world: World, sceneManager: Sce
 
     case "asteroids-how-to-play":
       return <HowToPlay />;
+
+    case "asteroids-game-over":
+      return <GameOver />;
 
     case "asteroids-main":
       return (

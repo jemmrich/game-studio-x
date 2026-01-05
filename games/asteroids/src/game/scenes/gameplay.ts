@@ -10,6 +10,7 @@ import { Visible } from "@engine/features/render-plugin/mod.ts";
 import { BasicMaterial } from "@engine/features/render-plugin/mod.ts";
 import { AsteroidComponent } from "../features/asteroid-plugin/components/asteroid.ts";
 import { EnteringZoneScene } from "./entering-zone-scene.ts";
+import { GameOverScene } from "./game-over-scene.ts";
 import * as THREE from "three";
 
 interface WorldEvent {
@@ -44,6 +45,7 @@ export class GameplayScene extends BaseScene {
   private unsubscribeEffectComplete?: () => void;
   private unsubscribeWaveComplete?: () => void;
   private unsubscribeEnteringZone?: () => void;
+  private unsubscribeGameOver?: () => void;
 
   constructor(threeJsScene: THREE.Scene) {
     super("asteroids-main");
@@ -107,6 +109,12 @@ export class GameplayScene extends BaseScene {
       this.onEnteringZone(world, event);
     });
 
+    // Setup listener for game over
+    // When the player runs out of lives, transition to GameOverScene
+    this.unsubscribeGameOver = world.onEvent("game_over", (event) => {
+      this.onGameOver(world, event);
+    });
+
     // Emit start_wave event AFTER scene is fully loaded
     // We use setTimeout to defer this to the next frame, ensuring:
     // 1. This scene's init() completes and scene is marked as loaded
@@ -125,7 +133,7 @@ export class GameplayScene extends BaseScene {
    * until the wave initialization spawns asteroids and triggers respawn_player event.
    * This prevents the ship from appearing before asteroids fade in.
    */
-  private onEnteringZoneEffectComplete(world: World, _event: WorldEvent): void {
+  private onEnteringZoneEffectComplete(_world: World, _event: WorldEvent): void {
     if (!this.shipEntityId) return;
 
     // Ship visibility is managed by WaveInitializationSystem and PlayerRespawnSystem
@@ -166,6 +174,19 @@ export class GameplayScene extends BaseScene {
   }
 
   /**
+   * Called when the game is over (player runs out of lives)
+   *
+   * Transitions to GameOverScene
+   */
+  private onGameOver(world: World, _event: WorldEvent): void {
+    const sceneManager = world.getResource<SceneManager>("sceneManager");
+    if (sceneManager) {
+      sceneManager.loadScene(new GameOverScene(this.threeJsScene));
+      console.log("[GameplayScene] Game over - Loading GameOverScene");
+    }
+  }
+
+  /**
    * Clean up gameplay scene resources
    *
    * Removes all event listeners and cleans up entities tagged with this scene
@@ -180,6 +201,9 @@ export class GameplayScene extends BaseScene {
     }
     if (this.unsubscribeEnteringZone) {
       this.unsubscribeEnteringZone();
+    }
+    if (this.unsubscribeGameOver) {
+      this.unsubscribeGameOver();
     }
 
     console.log("[GameplayScene] Disposed");
