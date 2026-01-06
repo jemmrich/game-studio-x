@@ -17,7 +17,13 @@ export class AudioSystem {
    * @param playbackRate - Playback speed/pitch (0.5 to 2.0, default 1.0). Lower = slower/deeper, higher = faster/higher pitch
    */
   static playSound(world: World, soundId: string, volume = 1.0, playbackRate = 1.0): void {
-    const assetLoader = world.getResource<AssetLoader>("assetLoader");
+    let assetLoader: AssetLoader | null = null;
+    try {
+      assetLoader = world.getResource<AssetLoader>("assetLoader");
+    } catch {
+      console.warn("[AudioSystem] AssetLoader not found in world resources");
+      return;
+    }
     
     if (!assetLoader) {
       console.warn("[AudioSystem] AssetLoader not found in world resources");

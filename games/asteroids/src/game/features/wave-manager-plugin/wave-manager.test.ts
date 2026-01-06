@@ -10,6 +10,7 @@ import { WaveTransitionSystem } from "./systems/wave-transition-system.ts";
 import { AsteroidComponent } from "../asteroid-plugin/components/asteroid.ts";
 import { AlienComponent } from "../alien-plugin/components/alien.ts";
 import { calculateDifficultyMultiplier } from "../../../shared/config.ts";
+import { installGameStatsPlugin } from "../game-stats-plugin/mod.ts";
 
 // Force TypeScript to recognize imports even if they seem unused
 
@@ -26,8 +27,6 @@ describe("WaveManager Resource", () => {
       expect(waveManager.totalWavesCompleted).toBe(0);
       expect(waveManager.asteroidCount).toBe(0);
       expect(waveManager.alienCount).toBe(0);
-      expect(waveManager.asteroidsDestroyedThisWave).toBe(0);
-      expect(waveManager.aliensDestroyedThisWave).toBe(0);
       expect(waveManager.isWaveComplete).toBe(false);
       expect(waveManager.isAsteroidsCleared).toBe(false);
       expect(waveManager.difficultyMultiplier).toBe(1.0);
@@ -55,30 +54,12 @@ describe("WaveManager Resource", () => {
       waveManager.alienCount = 1;
       expect(waveManager.alienCount).toBe(1);
     });
-
-    it("should record asteroid destruction", () => {
-      waveManager.recordAsteroidDestroyed();
-      expect(waveManager.asteroidsDestroyedThisWave).toBe(1);
-
-      waveManager.recordAsteroidDestroyed();
-      expect(waveManager.asteroidsDestroyedThisWave).toBe(2);
-    });
-
-    it("should record alien destruction", () => {
-      waveManager.recordAlienDestroyed();
-      expect(waveManager.aliensDestroyedThisWave).toBe(1);
-
-      waveManager.recordAlienDestroyed();
-      expect(waveManager.aliensDestroyedThisWave).toBe(2);
-    });
   });
 
   describe("wave reset", () => {
     it("should reset counts for new wave", () => {
       waveManager.asteroidCount = 5;
       waveManager.alienCount = 1;
-      waveManager.asteroidsDestroyedThisWave = 3;
-      waveManager.aliensDestroyedThisWave = 1;
       waveManager.isWaveComplete = true;
       waveManager.isAsteroidsCleared = true;
 
@@ -86,8 +67,6 @@ describe("WaveManager Resource", () => {
 
       expect(waveManager.asteroidCount).toBe(0);
       expect(waveManager.alienCount).toBe(0);
-      expect(waveManager.asteroidsDestroyedThisWave).toBe(0);
-      expect(waveManager.aliensDestroyedThisWave).toBe(0);
       expect(waveManager.isWaveComplete).toBe(false);
       expect(waveManager.isAsteroidsCleared).toBe(false);
       expect(waveManager.waveStartTime).toBe(1000);
@@ -109,6 +88,9 @@ describe("WaveTrackingSystem", () => {
 
     waveManager = new WaveManager();
     world.addResource("waveManager", waveManager);
+
+    // Install GameStats plugin
+    installGameStatsPlugin(world);
 
     trackingSystem = new WaveTrackingSystem();
     setupWaveTrackingEventListeners(world);
@@ -204,6 +186,7 @@ describe("WaveTrackingSystem", () => {
       world.add(alien, new AlienComponent());
 
       waveManager.waveStartTime = 0;
+      waveManager.hasSpawnedAsteroidsThisWave = true;
       trackingSystem.update(world);
 
       expect(waveManager.isWaveComplete).toBe(false);
@@ -245,9 +228,15 @@ describe("WaveTrackingSystem", () => {
         eventData = event.data;
       });
 
+      // Set up GameStats with destruction counts
+      const gameStats = world.getResource("gameStats") as any;
+      gameStats.totalLargeAsteroidsDestroyed = 1;
+      gameStats.totalMediumAsteroidsDestroyed = 1;
+      gameStats.totalSmallAsteroidsDestroyed = 1;
+      gameStats.totalLargeAliensKilled = 1;
+
       waveManager.waveStartTime = 100;
-      waveManager.asteroidsDestroyedThisWave = 3;
-      waveManager.aliensDestroyedThisWave = 1;
+      waveManager.hasSpawnedAsteroidsThisWave = true;
 
       trackingSystem.update(world);
       world.destroyEntity(asteroid);
@@ -259,7 +248,6 @@ describe("WaveTrackingSystem", () => {
       expect(eventData.aliensDestroyed).toBe(1);
       expect(eventData.waveStartTime).toBe(100);
     });
-
     it("should not re-emit wave_complete multiple times", () => {
       const asteroid = world.createEntity();
       world.add(asteroid, new AsteroidComponent());
@@ -271,6 +259,7 @@ describe("WaveTrackingSystem", () => {
       });
 
       waveManager.waveStartTime = 0;
+      waveManager.hasSpawnedAsteroidsThisWave = true;
       trackingSystem.update(world);
       world.destroyEntity(asteroid);
 
@@ -283,11 +272,9 @@ describe("WaveTrackingSystem", () => {
   });
 
   describe("wave transition reset", () => {
-    it("should reset counts when wave_transition event is emitted", () => {
+    it("should NOT reset counts when wave_transition event is emitted (reset happens in WaveInitializationSystem)", () => {
       waveManager.asteroidCount = 5;
       waveManager.alienCount = 1;
-      waveManager.asteroidsDestroyedThisWave = 3;
-      waveManager.aliensDestroyedThisWave = 1;
       waveManager.isWaveComplete = true;
       waveManager.isAsteroidsCleared = true;
 
@@ -297,12 +284,11 @@ describe("WaveTrackingSystem", () => {
         difficultyMultiplier: 1.15,
       });
 
-      expect(waveManager.asteroidCount).toBe(0);
-      expect(waveManager.alienCount).toBe(0);
-      expect(waveManager.asteroidsDestroyedThisWave).toBe(0);
-      expect(waveManager.aliensDestroyedThisWave).toBe(0);
-      expect(waveManager.isWaveComplete).toBe(false);
-      expect(waveManager.isAsteroidsCleared).toBe(false);
+      // wave_transition listener no longer resets - that happens in WaveInitializationSystem
+      expect(waveManager.asteroidCount).toBe(5);
+      expect(waveManager.alienCount).toBe(1);
+      expect(waveManager.isWaveComplete).toBe(true);
+      expect(waveManager.isAsteroidsCleared).toBe(true);
     });
   });
 });

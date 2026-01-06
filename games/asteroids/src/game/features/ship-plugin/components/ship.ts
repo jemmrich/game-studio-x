@@ -4,7 +4,6 @@
  */
 
 export interface ShipComponentOptions {
-  lives?: number;
   acceleration?: number;
   maxVelocity?: number;
   rotationSpeed?: number;
@@ -13,7 +12,6 @@ export interface ShipComponentOptions {
 }
 
 export class ShipComponent {
-  lives: number;
   acceleration: number;
   maxVelocity: number;
   rotationSpeed: number;
@@ -25,7 +23,6 @@ export class ShipComponent {
 
   constructor(options?: ShipComponentOptions) {
     const {
-      lives = 3,
       acceleration = 80,
       maxVelocity = 120,
       rotationSpeed = 4.71,
@@ -33,7 +30,6 @@ export class ShipComponent {
       velocityFriction = 0.995, // % decay per frame
     } = options || {};
 
-    this.lives = lives;
     this.acceleration = acceleration;
     this.maxVelocity = maxVelocity;
     this.rotationSpeed = rotationSpeed;

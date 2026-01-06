@@ -205,8 +205,13 @@ export class PlayerRespawnSystem {
       // Also reset thrust state to clear any momentum
       shipComponent.isThrusting = false;
       shipComponent.rotationDirection = 0;
+      
+      // Get lives from GameStats resource
+      const gameStats = world.getResource("gameStats");
+      const livesMessage = gameStats ? ` (Lives: ${(gameStats as any).currentLives})` : "";
+      
       console.log(
-        `[Player Respawn] Ship respawned at position [${position[0]}, ${position[1]}, ${position[2]}] - Invincibility ON (Lives: ${shipComponent.lives})`,
+        `[Player Respawn] Ship respawned at position [${position[0]}, ${position[1]}, ${position[2]}] - Invincibility ON${livesMessage}`,
       );
     }
   }

@@ -3,6 +3,7 @@ import { World } from "@engine/core/world.ts";
 import { MissileComponent } from "../components/missile.ts";
 import { MissileManager } from "../resources/missile-manager.ts";
 import { MissileCollisionSystem } from "./missile-collision-system.ts";
+import { installGameStatsPlugin } from "../../game-stats-plugin/mod.ts";
 
 describe("MissileCollisionSystem", () => {
   let world: World;
@@ -15,17 +16,11 @@ describe("MissileCollisionSystem", () => {
     world = new World();
     manager = new MissileManager();
     world.addResource("MissileManager", manager);
+    installGameStatsPlugin(world);
     system = new MissileCollisionSystem();
-    system.onAttach(world);
   });
 
   describe("initialization", () => {
-    it("should attach and initialize without errors", () => {
-      expect(() => {
-        system.onAttach(world);
-      }).not.toThrow();
-    });
-
     it("should create a query for MissileComponent entities", () => {
       const missile = world.createEntity();
       world.add(missile, new MissileComponent(1.0, 100, playerId));
@@ -104,11 +99,11 @@ describe("MissileCollisionSystem", () => {
     it("should run update with missing MissileManager", () => {
       const world2 = new World();
       const system2 = new MissileCollisionSystem();
-      system2.onAttach(world2);
 
       const missile = world2.createEntity();
       world2.add(missile, new MissileComponent(1.0, 100, "spawner" as unknown as any));
 
+      // System should throw when MissileManager is missing
       expect(() => {
         system2.update(world2, 0.016);
       }).toThrow();
@@ -192,7 +187,6 @@ describe("MissileCollisionSystem", () => {
       }
 
       const testSystem = new TestMissileCollisionSystem();
-      testSystem.onAttach(world);
 
       const spawner = world.createEntity();
       const missile = world.createEntity();

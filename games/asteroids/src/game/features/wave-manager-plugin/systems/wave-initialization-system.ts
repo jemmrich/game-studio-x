@@ -64,6 +64,10 @@ export class WaveInitializationSystem {
     
     const eventData = event.data as Record<string, unknown>;
     
+    // Reset wave state now that we're about to spawn asteroids
+    const time = world.getResource<Time>("time");
+    waveManager.resetForNewWave(time.elapsed);
+    
     // Get difficulty multiplier from event data, fallback to waveManager value
     const difficultyMultiplier = (eventData.difficultyMultiplier as number) || waveManager.difficultyMultiplier;
     
@@ -140,7 +144,6 @@ export class WaveInitializationSystem {
     waveManager.hasSpawnedAsteroidsThisWave = true;
 
     // Update wave start time (in milliseconds from performance.now())
-    const time = world.getResource<Time>("time");
     waveManager.waveStartTime = time.elapsed;
 
     // Delay player respawn slightly so asteroids appear first

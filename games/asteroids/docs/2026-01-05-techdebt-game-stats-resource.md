@@ -56,6 +56,10 @@ export class GameStats {
   totalMissileHits: number;
   totalHyperjumpsUsed: number;
 
+  // Bonus Life Tracking
+  bonusLifeThreshold: number = 10000; // Extra life every 10,000 points
+  lastBonusLifeScore: number = 0;
+
   // Death Tracking
   deathsByAsteroid: number;
   deathsBySmallAlien: number;
@@ -129,6 +133,14 @@ export class GameStats {
   // Score Management
   addScore(points: number): void {
     this.currentScore += points;
+    this.checkBonusLifeThreshold();
+  }
+
+  checkBonusLifeThreshold(): void {
+    while (this.currentScore >= this.lastBonusLifeScore + this.bonusLifeThreshold) {
+      this.lastBonusLifeScore += this.bonusLifeThreshold;
+      this.gainBonusLife();
+    }
   }
 
   // Destruction with automatic scoring
@@ -233,7 +245,45 @@ export class GameStats {
 }
 ```
 
-## System Integration Pattern
+## Scoring System
+
+All destruction events automatically award points and trigger bonus life checks:
+
+| Entity | Points | Mechanic |
+|--------|--------|----------|
+| Large Asteroid | 20 pts | Breaks into 2 medium asteroids |
+| Medium Asteroid | 50 pts | Breaks into 2 small asteroids |
+| Small Asteroid | 100 pts | Fully destroyed |
+| Large Saucer | 200 pts | Fires randomly |
+| Small Saucer | 1,000 pts | Fires accurately at player |
+| **Bonus Life** | Every 10,000 pts | Awards extra life at each threshold |
+
+## Planned Future Stats
+
+The following statistics are candidates for future implementation to provide deeper player insights:
+
+### Close Calls Tracking
+- **Definition**: Instances where player narrowly avoids collision (e.g., within 2 pixels of asteroid/alien)
+- **Use Case**: Playtesting feedback, difficulty tuning, player skill assessment
+- **Implementation**: `closeCalls: number` + method to increment when near-miss collision detected
+- **UI Display**: Show in DebugInfo and potentially in post-game summary
+
+### Distance Traveled
+- **Definition**: Total distance player ship has traversed during the game session
+- **Use Case**: Engagement metric, leaderboard secondary metric, movement pattern analysis
+- **Implementation**: 
+  - Track `previousPosition` each frame
+  - Calculate distance: `magnitude(currentPosition - previousPosition)`
+  - Accumulate in `totalDistanceTraveled: number`
+- **UI Display**: Show in DebugInfo, final stats screen, and leaderboard details
+
+These stats will be particularly useful for:
+1. **Difficulty Analysis**: Close calls indicate how challenging the current wave is
+2. **Player Engagement**: Distance traveled shows how active/mobile the player is
+3. **Leaderboard Depth**: Secondary metrics for comparing similar scores
+4. **Replay Analysis**: Correlate playstyle (mobile vs stationary) with performance
+
+
 
 ### Recommended: Direct Resource Access
 
@@ -372,28 +422,28 @@ This makes it easy to:
 ## Implementation Plan
 
 ### Phase 1: Create GameStats Resource
-- [ ] Create `GameStats` resource class
-- [ ] Add unit tests for stat tracking methods
-- [ ] Add `GameStatsPlugin` to register resource in world
+- [x] Create `GameStats` resource class
+- [x] Add unit tests for stat tracking methods (41/41 tests passing)
+- [x] Add `GameStatsPlugin` to register resource in world
 
 ### Phase 2: Update ShipComponent
-- [ ] Remove `lives` property from `ShipComponent`
-- [ ] Remove lives initialization from constructor
-- [ ] Update any code reading `ship.lives`
+- [x] Remove `lives` property from `ShipComponent`
+- [x] Remove lives initialization from constructor
+- [x] Update any code reading `ship.lives`
 
 ### Phase 3: Update Systems
-- [ ] Update collision systems to call `gameStats.recordDeathByAsteroid()`, etc.
-- [ ] Update asteroid destruction to call `gameStats.recordXAsteroidDestroyed()`
-- [ ] Update missile system to call `gameStats.recordMissileFired()`
-- [ ] Update wave tracking to call `gameStats.updateHighWaterMark()`
+- [x] Update collision systems to call `gameStats.recordDeathByAsteroid()`, etc.
+- [x] Update asteroid destruction to call `gameStats.recordXAsteroidDestroyed()`
+- [x] Update missile system to call `gameStats.recordMissileFired()`
+- [x] Update missile collision system to track hits with `gameStats.recordMissileHit()`
 
 ### Phase 4: Update WaveManager
-- [ ] Remove `asteroidsDestroyedThisWave` and `aliensDestroyedThisWave` (use GameStats instead)
-- [ ] Update `WaveTrackingSystem` to use GameStats
+- [x] Remove `asteroidsDestroyedThisWave` and `aliensDestroyedThisWave` (use GameStats instead)
+- [x] Update `WaveTrackingSystem` to use GameStats
 
 ### Phase 5: Update UI Components
-- [ ] Update `Hud.tsx` to read from `gameStats` resource instead of polling `ShipComponent`
-- [ ] Ensure HUD updates with resource listener pattern
+- [x] Update `Hud.tsx` to read from `gameStats` resource instead of polling `ShipComponent`
+- [x] Ensure HUD updates with resource listener pattern
 
 ### Phase 6: Testing & Cleanup
 - [ ] Run all tests

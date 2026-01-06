@@ -1,29 +1,22 @@
 import type { World } from "@engine/core/world.ts";
 import { WaveManager } from "../resources/wave-manager.ts";
 
-interface WorldEvent {
-  type: string;
-  data: Record<string, unknown>;
-}
-
 /**
  * AsteroidDestructionTrackerSystem
- * Tracks asteroid destruction and updates the wave manager counter.
- * - Listens for asteroid_destroyed events
- * - Increments asteroidsDestroyedThisWave counter
+ * Deprecated: Asteroid destruction is now tracked via GameStats resource
+ * This system is kept for compatibility but no longer performs any functions.
+ * - GameStats now centralizes all destruction tracking
+ * - WaveTrackingSystem reads destruction counts directly from GameStats
  */
 export class AsteroidDestructionTrackerSystem {
-  private asteroidDestroyedListener?: (event: WorldEvent) => void;
+  private asteroidDestroyedListener?: any;
 
   /**
-   * Setup event listeners during initialization
+   * Setup event listeners during initialization (deprecated, now a no-op)
    */
-  setup(world: World): void {
-    this.asteroidDestroyedListener = (event) => {
-      this.onAsteroidDestroyed(world, event);
-    };
-
-    world.onEvent("asteroid_destroyed", this.asteroidDestroyedListener);
+  setup(): void {
+    // Asteroid destruction tracking is now handled by GameStats
+    // No tracking needed here anymore
   }
 
   /**
@@ -31,14 +24,6 @@ export class AsteroidDestructionTrackerSystem {
    */
   update(): void {
     // Event-driven system, no frame-by-frame updates needed
-  }
-
-  /**
-   * Handle asteroid destruction - increment counter
-   */
-  private onAsteroidDestroyed(world: World, event: WorldEvent): void {
-    const waveManager = world.getResource<WaveManager>("waveManager");
-    waveManager.recordAsteroidDestroyed();
   }
 
   /**

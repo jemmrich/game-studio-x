@@ -4,6 +4,7 @@ import { ShipComponent } from "../components/ship.ts";
 import { Velocity } from "../components/velocity.ts";
 import { Transform } from "@engine/features/transform-plugin/mod.ts";
 import { Visible } from "@engine/features/render-plugin/mod.ts";
+import type { GameStats } from "../../../resources/game-stats.ts";
 
 /**
  * PlayerInputSystem
@@ -132,6 +133,12 @@ export class PlayerInputSystem {
         transform.position[1] = minY + Math.random() * (maxY - minY);
         
         console.log(`[PlayerInputSystem] Teleported to ${transform.position[0].toFixed(1)}, ${transform.position[1].toFixed(1)}`);
+
+        // Record hyperjump in GameStats
+        const gameStats = world.getResource<GameStats>("gameStats");
+        if (gameStats) {
+          gameStats.recordHyperjump();
+        }
       }
       
       // Consume the Q key press

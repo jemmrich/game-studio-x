@@ -24,7 +24,8 @@ export class AsteroidClearSystem {
       this.onWaveComplete(world, event);
     };
 
-    // Listen for both start_wave (Wave 1) and wave_transition (Wave 2+) to clear old asteroids before spawning new ones
+    // Listen for wave_complete, start_wave (Wave 1) and wave_transition (Wave 2+) to clear old asteroids before spawning new ones
+    world.onEvent("wave_complete", this.waveCompleteListener);
     world.onEvent("start_wave", this.waveCompleteListener);
     world.onEvent("wave_transition", this.waveCompleteListener);
   }

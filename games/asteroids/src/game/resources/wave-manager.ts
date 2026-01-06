@@ -17,8 +17,6 @@ export class WaveManager {
   // Entity Tracking
   asteroidCount: number;
   alienCount: number;
-  asteroidsDestroyedThisWave: number;
-  aliensDestroyedThisWave: number;
 
   // Timing
   waveStartTime: number;
@@ -42,8 +40,6 @@ export class WaveManager {
     this.totalWavesCompleted = startingWaveNumber - 1;
     this.asteroidCount = 0;
     this.alienCount = 0;
-    this.asteroidsDestroyedThisWave = 0;
-    this.aliensDestroyedThisWave = 0;
     this.waveStartTime = 0; // Will be set when wave starts
     this.isWaveComplete = false;
     this.isAsteroidsCleared = false;
@@ -58,24 +54,8 @@ export class WaveManager {
   resetForNewWave(currentTime: number): void {
     this.asteroidCount = 0;
     this.alienCount = 0;
-    this.asteroidsDestroyedThisWave = 0;
-    this.aliensDestroyedThisWave = 0;
     this.isWaveComplete = false;
     this.isAsteroidsCleared = false;
     this.waveStartTime = currentTime;
-  }
-
-  /**
-   * Increment destroyed asteroid count
-   */
-  recordAsteroidDestroyed(): void {
-    this.asteroidsDestroyedThisWave++;
-  }
-
-  /**
-   * Increment destroyed alien count
-   */
-  recordAlienDestroyed(): void {
-    this.aliensDestroyedThisWave++;
   }
 }

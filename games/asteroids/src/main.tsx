@@ -29,6 +29,7 @@ import { installMissilePlugin, MissileRenderSystem } from "./game/features/missi
 import { installAsteroidPlugin, AsteroidRenderSystem } from "./game/features/asteroid-plugin/mod.ts";
 import { installWaveManagerPlugin } from "./game/features/wave-manager-plugin/mod.ts";
 import { installEnteringZoneEffectPlugin } from "./game/features/entering-zone-effect-plugin/mod.ts";
+import { installGameStatsPlugin } from "./game/features/game-stats-plugin/mod.ts";
 import { AssetLoader } from "./game/resources/asset-loader.ts";
 import * as THREE from "three";
 
@@ -175,6 +176,9 @@ function setupGameWorld(world: World) {
   // DO NOT REORDER without understanding the event flow!
   // ═══════════════════════════════════════════════════════════════════
   
+  // Game stats plugin
+  installGameStatsPlugin(world);
+
   // Wave manager plugin
   installWaveManagerPlugin(world);
 

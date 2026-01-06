@@ -16,10 +16,6 @@ export class WaveManager {
   asteroidCount: number = 0;
   alienCount: number = 0;
 
-  // Destruction tracking
-  asteroidsDestroyedThisWave: number = 0;
-  aliensDestroyedThisWave: number = 0;
-
   // Wave state flags
   isAsteroidsCleared: boolean = false;
   isWaveComplete: boolean = false;
@@ -52,25 +48,9 @@ export class WaveManager {
   resetForNewWave(currentTime: number): void {
     this.asteroidCount = 0;
     this.alienCount = 0;
-    this.asteroidsDestroyedThisWave = 0;
-    this.aliensDestroyedThisWave = 0;
     this.isAsteroidsCleared = false;
     this.isWaveComplete = false;
     this.hasSpawnedAsteroidsThisWave = false;
     this.waveStartTime = currentTime;
-  }
-
-  /**
-   * Record an asteroid destruction
-   */
-  recordAsteroidDestroyed(): void {
-    this.asteroidsDestroyedThisWave++;
-  }
-
-  /**
-   * Record an alien destruction
-   */
-  recordAlienDestroyed(): void {
-    this.aliensDestroyedThisWave++;
   }
 }

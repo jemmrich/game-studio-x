@@ -3,6 +3,7 @@ import { Time } from "@engine/resources/time.ts";
 import { WaveManager } from "../resources/wave-manager.ts";
 import { AsteroidComponent } from "../../asteroid-plugin/components/asteroid.ts";
 import { AlienComponent } from "../../alien-plugin/components/alien.ts";
+import type { GameStats } from "../../game-stats-plugin/resources/game-stats.ts";
 
 /**
  * WaveTrackingSystem
@@ -28,6 +29,17 @@ export class WaveTrackingSystem {
     waveManager.asteroidCount = asteroids.entities().length;
     waveManager.alienCount = aliens.entities().length;
 
+    // Update high water mark for asteroid count in GameStats
+    const gameStats = world.getResource<GameStats>("gameStats");
+    if (gameStats) {
+      gameStats.updateHighWaterMark(waveManager.asteroidCount);
+      if (waveManager.asteroidCount > 0) {
+        console.log(
+          `[Wave Tracking] Asteroids: ${waveManager.asteroidCount}, High Water Mark: ${gameStats.highWaterMarkAsteroidsInWave}`
+        );
+      }
+    }
+
     // Detect asteroids cleared (interim state)
     if (waveManager.asteroidCount === 0 && !waveManager.isAsteroidsCleared) {
       waveManager.isAsteroidsCleared = true;
@@ -49,9 +61,16 @@ export class WaveTrackingSystem {
       const waveDuration = time.elapsed - waveManager.waveStartTime;
       waveManager.previousWaveDuration = waveDuration;
 
-      // Capture destroyed counts BEFORE emitting events (they will be reset)
-      const asteroidsDestroyed = waveManager.asteroidsDestroyedThisWave;
-      const aliensDestroyed = waveManager.aliensDestroyedThisWave;
+      // Capture destroyed counts from GameStats
+      const gameStats = world.getResource<GameStats>("gameStats");
+      const asteroidsDestroyed = gameStats
+        ? gameStats.totalLargeAsteroidsDestroyed +
+          gameStats.totalMediumAsteroidsDestroyed +
+          gameStats.totalSmallAsteroidsDestroyed
+        : 0;
+      const aliensDestroyed = gameStats
+        ? gameStats.totalLargeAliensKilled + gameStats.totalSmallAliensKilled
+        : 0;
       const completedWaveNumber = waveManager.currentWaveNumber;
 
       // Emit wave_complete event
@@ -72,9 +91,19 @@ export class WaveTrackingSystem {
 export function setupWaveTrackingEventListeners(world: World): void {
   const waveManager = world.getResource<WaveManager>("waveManager");
   const time = world.getResource<Time>("time");
+  const gameStats = world.getResource<GameStats>("gameStats");
 
+  // Listen for start_wave (Wave 1) - Reset high water mark for actual gameplay
+  world.onEvent("start_wave", () => {
+    if (gameStats) {
+      gameStats.highWaterMarkAsteroidsInWave = 0;
+    }
+    console.log("[Wave Tracking] Starting Wave 1 - High water mark reset");
+  });
+
+  // Listen for wave_transition (Wave 2+)
+  // Note: resetForNewWave is called by WaveInitializationSystem when asteroids are spawned
   world.onEvent("wave_transition", () => {
-    waveManager.resetForNewWave(time.elapsed);
     console.log(
       `[Wave Tracking] Ready for Wave ${waveManager.currentWaveNumber}`,
     );

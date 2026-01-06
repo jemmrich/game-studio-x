@@ -6,6 +6,7 @@ import { MissileManager } from "../resources/mod.ts";
 import { Transform } from "@engine/features/transform-plugin/mod.ts";
 import { AsteroidComponent } from "../../asteroid-plugin/components/mod.ts";
 import { getCollisionRadius } from "../../asteroid-plugin/config/asteroid-size-config.ts";
+import type { GameStats } from "../../../resources/game-stats.ts";
 
 /**
  * MissileCollisionSystem
@@ -48,7 +49,33 @@ export class MissileCollisionSystem {
 
     const manager = world.getResource<MissileManager>("MissileManager");
 
-    // Get all missile entities
+    // Get all missile entities (including those without Transform)
+    // Query for all entities with MissileComponent, regardless of other components
+    const allMissilesQuery = world.query(MissileComponent);
+    const allMissiles = allMissilesQuery.entities();
+
+    // First pass: Clean up missiles whose spawners no longer exist
+    const missilesToRemove: GUID[] = [];
+    for (const missileEntity of allMissiles) {
+      const missile = world.get<MissileComponent>(missileEntity, MissileComponent);
+      if (!missile) continue;
+
+      // Check if the spawner still exists
+      if (!world.entityExists(missile.spawnerId)) {
+        missilesToRemove.push(missileEntity);
+      }
+    }
+
+    // Clean up orphaned missiles
+    for (const missileEntity of missilesToRemove) {
+      const missile = world.get<MissileComponent>(missileEntity, MissileComponent);
+      if (missile && manager) {
+        manager.removeMissile(missile.spawnerId, missileEntity);
+      }
+      world.destroyEntity(missileEntity);
+    }
+
+    // Get missiles with Transform for collision detection
     const missiles = this.missileQuery.entities();
     const asteroids = this.asteroidQuery.entities();
 
@@ -80,6 +107,12 @@ export class MissileCollisionSystem {
 
         // Check if collision occurred
         if (distance < collisionRadius + missileRadius) {
+          // Update GameStats to track missile hit
+          const gameStats = world.getResource<GameStats>("gameStats");
+          if (gameStats) {
+            gameStats.recordMissileHit();
+          }
+
           // Emit collision event for asteroid destruction system
           world.emitEvent("asteroid_projectile_collision", {
             asteroidId: asteroidEntity,

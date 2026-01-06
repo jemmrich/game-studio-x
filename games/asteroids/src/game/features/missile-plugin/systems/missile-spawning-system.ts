@@ -2,6 +2,7 @@ import type { World } from "@engine/core/world.ts";
 import type { GUID } from "@engine/utils/guid.ts";
 import { spawnMissile } from "../factories/mod.ts";
 import { Velocity } from "../../ship-plugin/components/velocity.ts";
+import type { GameStats } from "../../../resources/game-stats.ts";
 
 /**
  * MissileSpawningSystem
@@ -50,7 +51,11 @@ export class MissileSpawningSystem {
 
       if (missileId !== null) {
         // Missile was spawned successfully
-        // (MissileManager was already updated by spawnMissile)
+        // Update GameStats to track missiles fired
+        const gameStats = world.getResource<GameStats>("gameStats");
+        if (gameStats) {
+          gameStats.recordMissileFired();
+        }
       }
     }
   }

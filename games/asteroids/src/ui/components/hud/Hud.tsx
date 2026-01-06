@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import type { World } from '@engine/core/world.ts';
-import { ShipComponent } from '../../../game/features/ship-plugin/components/ship.ts';
+import type { GameStats } from '../../../game/resources/game-stats.ts';
 import './Hud.css';
 
 interface HudProps {
@@ -12,27 +12,28 @@ interface HudProps {
 
 export const Hud: React.FC<HudProps> = ({
   world,
-  score = 0,
-  highScore = 0,
-  lives: initialLives = 3,
+  score: _score = 0,
+  highScore: _highScore = 0,
+  lives: _initialLives = 3,
 }) => {
-  const [lives, setLives] = useState(initialLives);
+  const [lives, setLives] = useState(_initialLives);
+  const [score, setScore] = useState(_score);
+  const [highScore, setHighScore] = useState(_highScore);
 
   useEffect(() => {
     if (!world) return;
 
-    // Update lives every frame from ShipComponent
-    const updateLives = () => {
-      const shipEntities = Array.from(world.query(ShipComponent).entities());
-      if (shipEntities.length > 0) {
-        const ship = world.get<ShipComponent>(shipEntities[0], ShipComponent);
-        if (ship) {
-          setLives(ship.lives);
-        }
+    // Update game stats every frame from GameStats resource
+    const updateGameStats = () => {
+      const gameStats = world.getResource<GameStats>("gameStats");
+      if (gameStats) {
+        setLives(gameStats.currentLives);
+        setScore(gameStats.currentScore);
+        setHighScore(gameStats.highScore ?? 0);
       }
     };
 
-    const frameId = setInterval(updateLives, 1000 / 60); // 60fps
+    const frameId = setInterval(updateGameStats, 1000 / 60); // 60fps
     return () => clearInterval(frameId);
   }, [world]);
 

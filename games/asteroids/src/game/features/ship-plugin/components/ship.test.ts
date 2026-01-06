@@ -5,7 +5,6 @@ describe("ShipComponent", () => {
   it("should create a ship with default options", () => {
     const ship = new ShipComponent();
 
-    expect(ship.lives).toBe(3);
     expect(ship.acceleration).toBe(80);
     expect(ship.maxVelocity).toBe(120);
     expect(ship.rotationSpeed).toBe(4.71);
@@ -13,12 +12,11 @@ describe("ShipComponent", () => {
     expect(ship.isThrusting).toBe(false);
     expect(ship.isInvincible).toBe(true);
     expect(ship.boundingBoxEnabled).toBe(false);
-    expect(ship.velocityFriction).toBe(0.98);
+    expect(ship.velocityFriction).toBe(0.995);
   });
 
   it("should create a ship with custom options", () => {
     const options = {
-      lives: 5,
       acceleration: 100,
       maxVelocity: 150,
       rotationSpeed: 6.0,
@@ -28,24 +26,11 @@ describe("ShipComponent", () => {
 
     const ship = new ShipComponent(options);
 
-    expect(ship.lives).toBe(5);
     expect(ship.acceleration).toBe(100);
     expect(ship.maxVelocity).toBe(150);
     expect(ship.rotationSpeed).toBe(6.0);
     expect(ship.boundingBoxEnabled).toBe(true);
     expect(ship.velocityFriction).toBe(0.95);
-  });
-
-  it("should allow lives to be decremented", () => {
-    const ship = new ShipComponent({ lives: 3 });
-    ship.lives -= 1;
-    expect(ship.lives).toBe(2);
-
-    ship.lives -= 1;
-    expect(ship.lives).toBe(1);
-
-    ship.lives -= 1;
-    expect(ship.lives).toBe(0);
   });
 
   it("should allow rotation direction to be set", () => {
@@ -84,10 +69,9 @@ describe("ShipComponent", () => {
   });
 
   it("should support partial option overrides", () => {
-    const ship = new ShipComponent({ lives: 2 });
+    const ship = new ShipComponent({ acceleration: 100 });
 
-    expect(ship.lives).toBe(2);
-    expect(ship.acceleration).toBe(80); // default
+    expect(ship.acceleration).toBe(100); // custom
     expect(ship.maxVelocity).toBe(120); // default
   });
 });

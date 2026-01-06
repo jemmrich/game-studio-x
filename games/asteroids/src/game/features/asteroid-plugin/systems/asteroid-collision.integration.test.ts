@@ -6,6 +6,7 @@ import { AsteroidDestructionSystem } from "./asteroid-destruction-system.ts";
 import { AsteroidSpawningSystem } from "./asteroid-spawning-system.ts";
 import { AsteroidComponent, Velocity, AngularVelocity } from "../components/mod.ts";
 import { spawnAsteroid } from "../factories/spawn-asteroid.ts";
+import { installGameStatsPlugin } from "../../game-stats-plugin/mod.ts";
 
 describe("Asteroid Collision & Destruction - Integration Tests", () => {
   let world: World;
@@ -21,6 +22,9 @@ describe("Asteroid Collision & Destruction - Integration Tests", () => {
 
     // Mock render context
     world.addResource("render_context", { width: 1024, height: 768 });
+
+    // Install game stats plugin
+    installGameStatsPlugin(world);
   });
 
   describe("projectile collision handling", () => {

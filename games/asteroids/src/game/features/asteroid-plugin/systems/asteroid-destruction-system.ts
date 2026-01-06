@@ -2,6 +2,7 @@ import type { World } from "@engine/core/world.ts";
 import type { GUID } from "@engine/utils/guid.ts";
 import { AsteroidComponent, type AsteroidSizeTier } from "../components/asteroid.ts";
 import { AudioSystem } from "../../../systems/audio-system.ts";
+import type { GameStats } from "../../../resources/game-stats.ts";
 
 /**
  * AsteroidDestructionSystem
@@ -81,6 +82,22 @@ export class AsteroidDestructionSystem {
     const points = this.getPointsForSize(asteroidComponent.sizeTier);
     if (this.scoreCallback) {
       this.scoreCallback(points);
+    }
+
+    // Update GameStats with asteroid destruction
+    const gameStats = world.getResource<GameStats>("gameStats");
+    if (gameStats) {
+      switch (asteroidComponent.sizeTier) {
+        case 3: // Large
+          gameStats.destroyLargeAsteroid();
+          break;
+        case 2: // Medium
+          gameStats.destroyMediumAsteroid();
+          break;
+        case 1: // Small
+          gameStats.destroySmallAsteroid();
+          break;
+      }
     }
 
     // Get next tier and spawn count - use the current component's sizeTier to ensure freshness
