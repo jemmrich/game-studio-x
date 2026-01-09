@@ -9,6 +9,8 @@ import {
 import { Visible } from "@engine/features/render-plugin/mod.ts";
 import { BasicMaterial } from "@engine/features/render-plugin/mod.ts";
 import { AsteroidComponent } from "../features/asteroid-plugin/components/asteroid.ts";
+import { MissileComponent } from "../features/missile-plugin/mod.ts";
+import { AlienComponent } from "../features/alien-plugin/mod.ts";
 import { EnteringZoneScene } from "./entering-zone-scene.ts";
 import { GameOverScene } from "./game-over-scene.ts";
 import * as THREE from "three";
@@ -56,16 +58,21 @@ export class GameplayScene extends BaseScene {
    * Initialize gameplay scene
    *
    * Steps:
-   * 1. Spawn the player ship (invisible during warp effect)
-   * 2. Connect ship plugin systems
-   * 3. Set asteroids to fade in for gameplay
-   * 4. Listen for wave lifecycle events
-   * 5. Emit start_wave to begin Wave 1
+   * 1. Emit game_resumed to signal systems that game is active
+   * 2. Spawn the player ship (invisible during warp effect)
+   * 3. Connect ship plugin systems
+   * 4. Set asteroids to fade in for gameplay
+   * 5. Listen for wave lifecycle events
+   * 6. Emit start_wave to begin Wave 1
    */
   init(world: World): void {
     // NOTE: All plugins are already installed in main.tsx
     // This scene sets up gameplay-specific entities and events
     // and coordinates the timing of ship and asteroid spawning
+
+    // Emit game_resumed event to signal systems that game is active
+    // This resets flags in systems that were set when game_paused was emitted
+    world.emitEvent("game_resumed", {});
 
     // Emit scene-transition event for UI
     world.emitEvent("scene-transition", { view: "gameplay" });
@@ -176,9 +183,15 @@ export class GameplayScene extends BaseScene {
   /**
    * Called when the game is over (player runs out of lives)
    *
-   * Transitions to GameOverScene
+   * Transitions to GameOverScene and prevents further game progression
    */
   private onGameOver(world: World, _event: WorldEvent): void {
+    // Emit game_paused event to signal systems to stop processing game events
+    // This prevents wave_complete from triggering new waves after game over
+    world.emitEvent("game_paused", {
+      reason: "game_over",
+    });
+
     const sceneManager = world.getResource<SceneManager>("sceneManager");
     if (sceneManager) {
       sceneManager.loadScene(new GameOverScene(this.threeJsScene));
@@ -189,9 +202,11 @@ export class GameplayScene extends BaseScene {
   /**
    * Clean up gameplay scene resources
    *
-   * Removes all event listeners and cleans up entities tagged with this scene
+   * - Unsubscribe from all event listeners
+   * - Destroy all gameplay entities (asteroids, missiles, aliens, player ship)
+   * - Reset entity counts in WaveManager
    */
-  dispose(): void {
+  dispose(world: World): void {
     // Unsubscribe from all events
     if (this.unsubscribeEffectComplete) {
       this.unsubscribeEffectComplete();
@@ -206,6 +221,38 @@ export class GameplayScene extends BaseScene {
       this.unsubscribeGameOver();
     }
 
-    console.log("[GameplayScene] Disposed");
+    // Destroy all gameplay entities to prevent them from persisting
+    // when returning to menu and starting a new game
+    
+    // Destroy player ship
+    if (this.shipEntityId && world.entityExists(this.shipEntityId)) {
+      world.destroyEntity(this.shipEntityId);
+    }
+
+    // Destroy all asteroids
+    const asteroidEntities = world.query(AsteroidComponent).entities();
+    for (const entity of asteroidEntities) {
+      if (world.entityExists(entity)) {
+        world.destroyEntity(entity);
+      }
+    }
+
+    // Destroy all missiles
+    const missileEntities = world.query(MissileComponent).entities();
+    for (const entity of missileEntities) {
+      if (world.entityExists(entity)) {
+        world.destroyEntity(entity);
+      }
+    }
+
+    // Destroy all aliens
+    const alienEntities = world.query(AlienComponent).entities();
+    for (const entity of alienEntities) {
+      if (world.entityExists(entity)) {
+        world.destroyEntity(entity);
+      }
+    }
+
+    console.log("[GameplayScene] Disposed and cleaned up all gameplay entities");
   }
 }

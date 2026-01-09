@@ -33,11 +33,6 @@ export class WaveTrackingSystem {
     const gameStats = world.getResource<GameStats>("gameStats");
     if (gameStats) {
       gameStats.updateHighWaterMark(waveManager.asteroidCount);
-      if (waveManager.asteroidCount > 0) {
-        console.log(
-          `[Wave Tracking] Asteroids: ${waveManager.asteroidCount}, High Water Mark: ${gameStats.highWaterMarkAsteroidsInWave}`
-        );
-      }
     }
 
     // Detect asteroids cleared (interim state)

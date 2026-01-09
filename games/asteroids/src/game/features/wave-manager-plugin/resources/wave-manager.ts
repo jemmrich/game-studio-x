@@ -53,4 +53,12 @@ export class WaveManager {
     this.hasSpawnedAsteroidsThisWave = false;
     this.waveStartTime = currentTime;
   }
+
+  /**
+   * Reset the entire WaveManager to initial state for a new game
+   */
+  reset(options?: WaveManagerOptions): void {
+    const newManager = new WaveManager(options);
+    Object.assign(this, newManager);
+  }
 }

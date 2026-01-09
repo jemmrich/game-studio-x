@@ -13,10 +13,14 @@ interface WorldEvent {
  * - Listens for wave_complete event
  * - Increments wave number and calculates difficulty
  * - Emits wave_transition event for spawn system
- * - Optionally emits entering_zone event for scene effects
+ * - Ignores wave progression when game is paused/over
+ * - Resumes wave progression when game is resumed
  */
 export class WaveTransitionSystem {
   private waveCompleteListener?: (event: WorldEvent) => void;
+  private gamePausedListener?: (event: WorldEvent) => void;
+  private gameResumedListener?: (event: WorldEvent) => void;
+  private isGameOver: boolean = false;
 
   /**
    * Setup event listeners during initialization
@@ -26,7 +30,17 @@ export class WaveTransitionSystem {
       this.onWaveComplete(world, event);
     };
 
+    this.gamePausedListener = (event) => {
+      this.onGamePaused(world, event);
+    };
+
+    this.gameResumedListener = (event) => {
+      this.onGameResumed(world, event);
+    };
+
     world.onEvent("wave_complete", this.waveCompleteListener);
+    world.onEvent("game_paused", this.gamePausedListener);
+    world.onEvent("game_resumed", this.gameResumedListener);
   }
 
   /**
@@ -37,9 +51,37 @@ export class WaveTransitionSystem {
   }
 
   /**
+   * Handle game pause/over event
+   * Prevents further wave progression when game is no longer active
+   */
+  private onGamePaused(_world: World, event: WorldEvent): void {
+    const reason = (event.data as Record<string, unknown>).reason;
+    if (reason === "game_over") {
+      this.isGameOver = true;
+      console.log("[WaveTransitionSystem] Game over detected - preventing further wave transitions");
+    }
+  }
+
+  /**
+   * Handle game resumed event
+   * Re-enables wave progression when a new game starts
+   */
+  private onGameResumed(_world: World, _event: WorldEvent): void {
+    this.isGameOver = false;
+    console.log("[WaveTransitionSystem] Game resumed - wave transitions re-enabled");
+  }
+
+  /**
    * Handle wave completion and transition to next wave
+   * Skips processing if game is over
    */
   private onWaveComplete(world: World, event: WorldEvent): void {
+    // Ignore wave completion if game is over - prevents new waves from spawning
+    if (this.isGameOver) {
+      console.log("[WaveTransitionSystem] Ignoring wave_complete - game is over");
+      return;
+    }
+
     const waveManager = world.getResource<WaveManager>("waveManager");
 
     // Increment wave counter
@@ -74,5 +116,9 @@ export class WaveTransitionSystem {
   dispose(): void {
     // Event listeners are automatically cleaned up by world
     this.waveCompleteListener = undefined;
+    this.gamePausedListener = undefined;
+    this.gameResumedListener = undefined;
+    // Reset game over flag for next game
+    this.isGameOver = false;
   }
 }

@@ -7,6 +7,8 @@ import { spawnAsteroid, AsteroidRenderSystem } from "../features/asteroid-plugin
 import { BasicMaterial } from "@engine/features/render-plugin/mod.ts";
 import { GameplayScene } from "./gameplay.ts";
 import { AudioSystem } from "../systems/audio-system.ts";
+import { GameStats } from "../features/game-stats-plugin/mod.ts";
+import { WaveManager } from "../features/wave-manager-plugin/mod.ts";
 import * as THREE from "three";
 
 /**
@@ -29,6 +31,7 @@ export class MenuScene extends BaseScene {
   private threeJsScene: THREE.Scene;
   private asteroidEntityIds: GUID[] = [];
   private backgroundMusic: HTMLAudioElement | null = null;
+  private unsubscribeMenuListener?: () => void;
 
   constructor(threeJsScene: THREE.Scene) {
     super("asteroids-menu");
@@ -113,19 +116,40 @@ export class MenuScene extends BaseScene {
     }
 
     // Set up listener for menu selection
-    this.setupMenuListener(world);
+    this.unsubscribeMenuListener = this.setupMenuListener(world);
   }
 
   /**
    * Handle menu item selection from React UI
    *
    * Listens for menu-item-selected events and transitions based on selection
+   * Returns an unsubscribe function to clean up the listener
    */
-  private setupMenuListener(world: World): void {
-    world.onEvent("menu-item-selected", (event) => {
+  private setupMenuListener(world: World): () => void {
+    return world.onEvent("menu-item-selected", (event) => {
       const menuItem = event.data?.menuItem as string;
+      console.log(`[MenuScene] Menu item selected: ${menuItem}`);
       
       if (menuItem === "new-game") {
+        console.log("[MenuScene] Starting new game - resetting stats and wave manager");
+        
+        // Reset game stats and wave manager to their initial state
+        const gameStats = world.getResource<GameStats>("gameStats");
+        if (gameStats) {
+          console.log(`[MenuScene] Before reset - Lives: ${gameStats.currentLives}, Score: ${gameStats.currentScore}, Deaths: ${gameStats.totalDeaths}`);
+          gameStats.reset();
+          console.log(`[MenuScene] After reset - Lives: ${gameStats.currentLives}, Score: ${gameStats.currentScore}, Deaths: ${gameStats.totalDeaths}`);
+        } else {
+          console.warn("[MenuScene] GameStats resource not found!");
+        }
+
+        const waveManager = world.getResource<WaveManager>("waveManager");
+        if (waveManager) {
+          waveManager.reset();
+          console.log("[MenuScene] WaveManager reset for new game");
+        }
+
+        // Load the gameplay scene
         const sceneManager = world.getResource<SceneManager>("sceneManager");
         if (sceneManager) {
           sceneManager.loadScene(new GameplayScene(this.threeJsScene));
@@ -146,10 +170,16 @@ export class MenuScene extends BaseScene {
   /**
    * Clean up menu scene resources
    *
+   * - Unsubscribe from menu item selection listener
    * - Remove all spawned asteroids
-   * - Base class cleanup of tagged entities
    */
   dispose(world: World): void {
+    // Unsubscribe from menu selection listener
+    if (this.unsubscribeMenuListener) {
+      this.unsubscribeMenuListener();
+      console.log("[MenuScene] Unsubscribed from menu-item-selected event");
+    }
+
     // Remove all spawned asteroids from the scene
     console.log(`[MenuScene] Disposing - cleaning up ${this.asteroidEntityIds.length} asteroids`);
     for (const asteroidId of this.asteroidEntityIds) {

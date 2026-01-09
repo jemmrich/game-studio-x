@@ -49,6 +49,10 @@ export const Menu: React.FC<MenuProps> = ({ world, sceneManager }) => {
 
   const handleMenuSelect = useCallback((item: MenuItem) => {
     const threeScene = world.getResource<THREE.Scene>('threeScene');
+    
+    // Emit menu-item-selected event to world so MenuScene can handle reset logic
+    world.emitEvent('menu-item-selected', { menuItem: item });
+    
     if (item === 'new-game') {
       sceneManager.loadScene(new GameplayScene(threeScene));
     } else if (item === 'high-scores') {

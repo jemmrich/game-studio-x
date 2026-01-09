@@ -207,6 +207,9 @@ export class GameStats {
   reset(options?: GameStatsOptions): void {
     const newStats = new GameStats(options);
     Object.assign(this, newStats);
+    console.log(
+      `[GameStats] Reset - Lives: ${this.currentLives}, Score: ${this.currentScore}, Deaths: ${this.totalDeaths}`
+    );
   }
 
   // Serialization Methods (for leaderboard submission)

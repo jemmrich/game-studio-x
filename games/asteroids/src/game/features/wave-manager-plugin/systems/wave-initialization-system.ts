@@ -20,9 +20,11 @@ interface WorldEvent {
  * - Spawns asteroids with difficulty scaling
  * - Respawns player at center of screen
  * - Sets wave start time for duration tracking
+ * - Resets state when game pauses for a new game
  */
 export class WaveInitializationSystem {
   private effectCompleteListener?: (event: WorldEvent) => void;
+  private gamePausedListener?: (event: WorldEvent) => void;
   private lastInitializedWave: number = -1;
 
   /**
@@ -33,9 +35,15 @@ export class WaveInitializationSystem {
       this.onInitializeWave(world, event);
     };
 
+    this.gamePausedListener = (event) => {
+      this.onGamePaused(world, event);
+    };
+
     // Listen for entering_zone_effect_complete event (warp effect finished playing)
     // This delays asteroid spawning until after the warp effect completes
     world.onEvent("entering_zone_effect_complete", this.effectCompleteListener);
+    // Listen for game_paused to reset wave initialization state for the next game
+    world.onEvent("game_paused", this.gamePausedListener);
   }
 
   /**
@@ -43,6 +51,14 @@ export class WaveInitializationSystem {
    */
   update(): void {
     // Event-driven system, no frame-by-frame updates needed
+  }
+
+  /**
+   * Handle game paused event - reset wave initialization state for next game
+   */
+  private onGamePaused(_world: World, _event: WorldEvent): void {
+    this.lastInitializedWave = -1;
+    console.log("[WaveInitializationSystem] Game paused - reset wave initialization state for next game");
   }
 
   /**
@@ -218,5 +234,6 @@ export class WaveInitializationSystem {
    */
   dispose(): void {
     this.effectCompleteListener = undefined;
+    this.gamePausedListener = undefined;
   }
 }

@@ -71,6 +71,51 @@ describe("WaveManager Resource", () => {
       expect(waveManager.isAsteroidsCleared).toBe(false);
       expect(waveManager.waveStartTime).toBe(1000);
     });
+
+    it("should reset entire WaveManager to initial state", () => {
+      // Modify all properties
+      waveManager.currentWaveNumber = 5;
+      waveManager.totalWavesCompleted = 4;
+      waveManager.asteroidCount = 3;
+      waveManager.alienCount = 2;
+      waveManager.isWaveComplete = true;
+      waveManager.isAsteroidsCleared = true;
+      waveManager.hasSpawnedAsteroidsThisWave = true;
+      waveManager.difficultyMultiplier = 2.5;
+      waveManager.waveStartTime = 5000;
+      waveManager.previousWaveDuration = 15000;
+
+      // Reset to initial state
+      waveManager.reset();
+
+      // Verify all properties are reset to defaults
+      expect(waveManager.currentWaveNumber).toBe(1);
+      expect(waveManager.totalWavesCompleted).toBe(0);
+      expect(waveManager.asteroidCount).toBe(0);
+      expect(waveManager.alienCount).toBe(0);
+      expect(waveManager.isWaveComplete).toBe(false);
+      expect(waveManager.isAsteroidsCleared).toBe(false);
+      expect(waveManager.hasSpawnedAsteroidsThisWave).toBe(false);
+      expect(waveManager.difficultyMultiplier).toBe(1.0);
+      expect(waveManager.waveStartTime).toBe(0);
+      expect(waveManager.previousWaveDuration).toBe(0);
+    });
+
+    it("should reset with custom options", () => {
+      // Modify properties
+      waveManager.currentWaveNumber = 10;
+      waveManager.difficultyMultiplier = 5.0;
+
+      // Reset with custom options
+      waveManager.reset({ startingWaveNumber: 3, startingDifficultyMultiplier: 2.0 });
+
+      // Verify reset with custom options
+      expect(waveManager.currentWaveNumber).toBe(3);
+      expect(waveManager.totalWavesCompleted).toBe(2); // startingWaveNumber - 1
+      expect(waveManager.difficultyMultiplier).toBe(2.0);
+      expect(waveManager.asteroidCount).toBe(0);
+      expect(waveManager.alienCount).toBe(0);
+    });
   });
 });
 

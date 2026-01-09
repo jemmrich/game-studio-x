@@ -12,9 +12,11 @@ interface WorldEvent {
  * - Listens for start_wave event
  * - Emits entering_zone event to trigger the warp effect
  * - Ensures players see the warp effect as they enter the first asteroid field
+ * - Resets when game_paused so the effect plays again on a new game
  */
 export class InitialZoneEntrySystem {
   private startWaveListener?: (event: WorldEvent) => void;
+  private gamePausedListener?: (event: WorldEvent) => void;
   private hasEmittedInitialZone: boolean = false;
 
   /**
@@ -25,8 +27,14 @@ export class InitialZoneEntrySystem {
       this.onStartWave(world, event);
     };
 
+    this.gamePausedListener = (event) => {
+      this.onGamePaused(world, event);
+    };
+
     // Listen for start_wave event (Wave 1 initialization)
     world.onEvent("start_wave", this.startWaveListener);
+    // Listen for game_paused to reset the flag for the next game
+    world.onEvent("game_paused", this.gamePausedListener);
   }
 
   /**
@@ -37,10 +45,18 @@ export class InitialZoneEntrySystem {
   }
 
   /**
+   * Handle game paused event - reset flag so entering_zone effect plays again on next game
+   */
+  private onGamePaused(_world: World, _event: WorldEvent): void {
+    this.hasEmittedInitialZone = false;
+    console.log("[InitialZoneEntrySystem] Game paused - reset initial zone flag for next game");
+  }
+
+  /**
    * Handle start_wave event - emit entering_zone for the warp effect
    */
   private onStartWave(world: World, _event: WorldEvent): void {
-    // Guard against emitting multiple times
+    // Guard against emitting multiple times within the same game
     if (this.hasEmittedInitialZone) {
       return;
     }
@@ -65,5 +81,6 @@ export class InitialZoneEntrySystem {
    */
   dispose(): void {
     this.startWaveListener = undefined;
+    this.gamePausedListener = undefined;
   }
 }
