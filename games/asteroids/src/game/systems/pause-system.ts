@@ -1,9 +1,11 @@
 import type { World } from "@engine/core/world.ts";
+import { SceneManager } from "@engine/resources/scene-manager.ts";
 import { PauseState } from "../resources/pause-state.ts";
 
 /**
  * PauseSystem
  * Listens for 'P' key to toggle pause state and auto-pauses on browser blur
+ * (only during active gameplay, not during menus, title screen, or transition effects)
  */
 export class PauseSystem {
   private keysPressed: Set<string> = new Set();
@@ -43,12 +45,19 @@ export class PauseSystem {
   }
 
   private setupFocusListeners(world: World): void {
-    // Auto-pause when browser loses focus (player is actively playing)
+    // Auto-pause when browser loses focus, but ONLY during active gameplay
+    // Don't pause during menu, title screen, entering zone effect, etc.
     this.blurHandler = () => {
-      const pauseState = world.getResource<PauseState>("pauseState");
-      if (pauseState && !pauseState.getIsPaused()) {
-        pauseState.pause();
-        console.log("[PauseSystem] Game auto-paused on browser blur");
+      const sceneManager = world.getResource<SceneManager>("sceneManager");
+      const currentScene = sceneManager?.getCurrentScene();
+      
+      // Only auto-pause if the current scene is the gameplay scene
+      if (currentScene?.id === "asteroids-main") {
+        const pauseState = world.getResource<PauseState>("pauseState");
+        if (pauseState && !pauseState.getIsPaused()) {
+          pauseState.pause();
+          console.log("[PauseSystem] Game auto-paused on browser blur");
+        }
       }
     };
 
