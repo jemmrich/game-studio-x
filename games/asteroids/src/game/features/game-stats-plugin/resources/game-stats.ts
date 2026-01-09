@@ -16,6 +16,7 @@ export class GameStats {
 
   // Score
   currentScore: number;
+  highScore: number;
 
   // Weapon Stats
   totalMissilesFired: number;
@@ -55,6 +56,7 @@ export class GameStats {
     this.bonusLives = 0;
     this.totalDeaths = 0;
     this.currentScore = startingScore;
+    this.highScore = this.loadHighScoreFromLocalStorage();
     this.totalMissilesFired = 0;
     this.totalMissileHits = 0;
     this.totalHyperjumpsUsed = 0;
@@ -204,6 +206,42 @@ export class GameStats {
     return endTime - this.gameStartTimestamp;
   }
 
+  /**
+   * Load high score from localStorage
+   * Returns 0 if no high score is stored
+   */
+  private loadHighScoreFromLocalStorage(): number {
+    try {
+      const stored = globalThis.localStorage?.getItem("asteroids-high-score");
+      if (stored !== null) {
+        const score = parseInt(stored, 10);
+        return isNaN(score) ? 0 : score;
+      }
+    } catch (error) {
+      console.warn("[GameStats] Failed to load high score from localStorage:", error);
+    }
+    return 0;
+  }
+
+  /**
+   * Save high score to localStorage if current score is higher
+   * Returns true if the score was saved
+   */
+  saveHighScoreIfHigher(): boolean {
+    if (this.currentScore > this.highScore) {
+      this.highScore = this.currentScore;
+      try {
+        globalThis.localStorage?.setItem("asteroids-high-score", this.highScore.toString());
+        console.log(`[GameStats] High score saved: ${this.highScore}`);
+        return true;
+      } catch (error) {
+        console.warn("[GameStats] Failed to save high score to localStorage:", error);
+        return false;
+      }
+    }
+    return false;
+  }
+
   reset(options?: GameStatsOptions): void {
     const newStats = new GameStats(options);
     Object.assign(this, newStats);
@@ -219,6 +257,7 @@ export class GameStats {
       bonusLives: this.bonusLives,
       totalDeaths: this.totalDeaths,
       currentScore: this.currentScore,
+      highScore: this.highScore,
       totalMissilesFired: this.totalMissilesFired,
       totalMissileHits: this.totalMissileHits,
       totalHyperjumpsUsed: this.totalHyperjumpsUsed,

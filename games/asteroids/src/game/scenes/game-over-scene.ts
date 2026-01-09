@@ -3,6 +3,7 @@ import type { World } from "@engine/core/world.ts";
 import { SceneManager } from "@engine/resources/scene-manager.ts";
 import { MenuScene } from "./menu-scene.ts";
 import { AudioSystem } from "../systems/audio-system.ts";
+import type { GameStats } from "../features/game-stats-plugin/mod.ts";
 import * as THREE from "three";
 
 /**
@@ -37,6 +38,15 @@ export class GameOverScene extends BaseScene {
    * Sets up input handling for returning to menu
    */
   init(world: World): void {
+    // Save high score if current score is higher
+    const gameStats = world.getResource<GameStats>("gameStats");
+    if (gameStats) {
+      const isNewHighScore = gameStats.saveHighScoreIfHigher();
+      if (isNewHighScore) {
+        console.log(`[GameOverScene] New high score: ${gameStats.currentScore}`);
+      }
+    }
+
     // Emit scene-transition event for UI
     world.emitEvent("scene-transition", { view: "game-over" });
 
